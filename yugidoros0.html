@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動點機率計算機</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); width: 100%; max-width: 400px; }
+        h2 { color: #333; text-align: center; margin-bottom: 20px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 14px; color: #666; margin-bottom: 5px; }
+        input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 15px; background: #4a90e2; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:active { transform: scale(0.98); }
+        .result { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
+        .prob-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+        .total-prob { border-top: 2px solid #ddd; margin-top: 10px; padding-top: 10px; font-weight: bold; color: #ff6b6b; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>初動機率計算 🎯</h2>
+    <div class="input-group">
+        <label>總卡片數 (N)</label>
+        <input type="number" id="totalCards" value="40" min="5">
+    </div>
+    <div class="input-group">
+        <label>動點卡片數 (K)</label>
+        <input type="number" id="winCards" value="9" min="0">
+    </div>
+    <div class="input-group">
+        <label>每次抽取張數 (n)</label>
+        <input type="number" id="drawCount" value="5" readonly>
+    </div>
+    <button onclick="calculate()">計算機率</button>
+
+    <div id="resultArea" class="result" style="display:none;">
+        <div id="details"></div>
+        <div class="total-prob" id="atLeastOne"></div>
+    </div>
+</div>
+
+<script>
+    // 組合數計算 C(n, k)
+    function combinations(n, k) {
+        if (k < 0 || k > n) return 0;
+        if (k === 0 || k === n) return 1;
+        if (k > n / 2) k = n - k;
+        let res = 1;
+        for (let i = 1; i <= k; i++) {
+            res = res * (n - i + 1) / i;
+        }
+        return res;
+    }
+
+    function calculate() {
+        const N = parseInt(document.getElementById('totalCards').value); // 總數
+        const K = parseInt(document.getElementById('winCards').value); // 中獎數
+        const n = 5; // 抽樣數
+
+        if (K > N) { alert("中獎卡數不能大於總卡數！"); return; }
+
+        let html = "";
+        let probZero = 0;
+
+        const totalCombos = combinations(N, n);
+
+        for (let k = 0; k <= n; k++) {
+            // 超幾何分佈公式: P(X=k) = [C(K, k) * C(N-K, n-k)] / C(N, n)
+            const comboWin = combinations(K, k);
+            const comboLose = combinations(N - K, n - k);
+            const prob = (comboWin * comboLose) / totalCombos;
+            const percent = (prob * 100).toFixed(2);
+
+            if (k === 0) probZero = prob;
+
+            html += `<div class="prob-item"><span>動點 ${k} 張:</span> <span>${percent}%</span></div>`;
+        }
+
+        document.getElementById('resultArea').style.display = "block";
+        document.getElementById('details').innerHTML = html;
+        document.getElementById('atLeastOne').innerHTML = `至少中 1 張動點的總機率：${((1 - probZero) * 100).toFixed(2)}%`;
+    }
+</script>
+
+</body>
+</html>
