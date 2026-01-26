@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>yugi補點計算機</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --combo: #fcc419;
+            --danger: #ff6b6b;
+            --bg: #f0f2f5;
+        }
+        body { font-family: "PingFang TC", sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { background: white; width: 100%; max-width: 450px; border-radius: 24px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        .input-card { background: #f8f9fa; border-radius: 16px; padding: 15px; margin-bottom: 15px; }
+        .field { margin-bottom: 12px; }
+        label { display: block; font-size: 13px; font-weight: bold; color: #666; margin-bottom: 4px; }
+        input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; }
+        input:focus { border-color: var(--primary); background: #fff; }
+        
+        button { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 16px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.96); }
+
+        .result-box { display: none; margin-top: 20px; }
+        .main-result { border-radius: 16px; padding: 15px; text-align: center; margin-bottom: 15px; color: white; }
+        .bg-red { background: var(--danger); border: 2px solid #e05555; }
+        .bg-gold { background: var(--combo); border: 2px solid #e0ae14; color: #333; }
+        
+        .label { font-size: 14px; font-weight: bold; opacity: 0.9; }
+        .value { font-size: 28px; font-weight: 900; }
+
+        .detail-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 10px; margin-top: 10px; }
+        .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Duelist 計算機 🎴</h2>
+    
+    <div class="input-card">
+        <div class="field">
+            <label>牌組總張數 (通常為 40)</label>
+            <input type="number" id="N" value="40">
+        </div>
+        <div class="field">
+            <label>動點 A 數量</label>
+            <input type="number" id="Ka" value="3">
+        </div>
+        <div class="field">
+            <label>補卡 B 數量 (如：指名者、補點)</label>
+            <input type="number" id="Kb" value="3">
+        </div>
+        <div class="field">
+            <label>起手抽牌數 (先行 5 / 後攻 6)</label>
+            <input type="number" id="n" value="5">
+        </div>
+    </div>
+
+    <button onclick="calc()">起手穩定度</button>
+
+    <div class="result-box" id="resBox">
+        <div class="main-result bg-gold">
+            <div class="label">✨ A + B 同時在手 (Combo!)</div>
+            <div class="value" id="probAB">- %</div>
+        </div>
+        
+        <div class="main-result bg-red">
+            <div class="label">🔥 至少有 1 張 A (基本展開)</div>
+            <div class="value" id="probA">- %</div>
+        </div>
+
+        <div class="detail-card" id="details">
+            </div>
+    </div>
+</div>
+
+<script>
+    function combinations(n, k) {
+        if (k < 0 || k > n) return 0;
+        if (k === 0 || k === n) return 1;
+        if (k > n / 2) k = n - k;
+        let res = 1;
+        for (let i = 1; i <= k; i++) res = res * (n - i + 1) / i;
+        return res;
+    }
+
+    function calc() {
+        const N = parseInt(document.getElementById('N').value);
+        const Ka = parseInt(document.getElementById('Ka').value);
+        const Kb = parseInt(document.getElementById('Kb').value);
+        const n = parseInt(document.getElementById('n').value);
+
+        if (Ka + Kb > N) { alert("A+B 總數不能超過牌組總數"); return; }
+
+        const totalC = combinations(N, n);
+
+        // 1. 計算至少有一張 A 的機率: 1 - (C(N-Ka, n) / C(N, n))
+        const probAtLeastOneA = 1 - (combinations(N - Ka, n) / totalC);
+
+        // 2. 計算 A 與 B 同時存在的機率:
+        // 公式：1 - [P(沒有A) + P(沒有B) - P(既沒A也沒B)]
+        const pNoA = combinations(N - Ka, n) / totalC;
+        const pNoB = combinations(N - Kb, n) / totalC;
+        const pNoAnorB = combinations(N - Ka - Kb, n) / totalC;
+        const probAandB = 1 - (pNoA + pNoB - pNoAnorB);
+
+        // 顯示結果
+        document.getElementById('resBox').style.display = 'block';
+        document.getElementById('probA').innerText = (probAtLeastOneA * 100).toFixed(2) + '%';
+        document.getElementById('probAB').innerText = (probAandB * 100).toFixed(2) + '%';
+
+        // 額外細節
+        let html = `<div style="font-weight:bold; margin-bottom:5px; font-size:13px; color:#666;">其他情境：</div>`;
+        html += `<div class="detail-row"><span>只有 B 沒有 A：</span><span>${((probAtLeastOneB() - probAandB)*100).toFixed(2)}%</span></div>`;
+        html += `<div class="detail-row"><span>完全沒 A 也沒 B：</span><span>${(pNoAnorB * 100).toFixed(2)}%</span></div>`;
+        document.getElementById('details').innerHTML = html;
+
+        function probAtLeastOneB() {
+            return 1 - (combinations(N - Kb, n) / totalC);
+        }
+    }
+</script>
+
+</body>
+</html>
