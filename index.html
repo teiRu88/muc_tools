@@ -1,54 +1,56 @@
-<style>
-    :root {
-        --primary-blue: #4a90e2;
-        --primary-red: #ff6b6b;
-        --primary-green: #51cf66;
-        --text-color: #ffffff;
-    }
-
-    .nav-container {
-        display: flex;
-        flex-direction: column;
-        gap: 15px; /* 按鈕之間的間距 */
-        padding: 20px;
-        max-width: 300px;
-        margin: 0 auto;
-    }
-
-    .nav-button {
-        display: block;
-        text-align: center;
-        text-decoration: none;
-        padding: 16px 24px;
-        font-size: 18px;
-        font-weight: bold;
-        color: var(--text-color);
-        border-radius: 12px;
-        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    /* 不同頁面給不同顏色，方便辨識 */
-    .btn-home { background: var(--primary-blue); }
-    .btn-calendar { background: var(--primary-red); }
-    .btn-todo { background: var(--primary-green); }
-
-    /* 懸停效果 (Figma Hover 狀態) */
-    .nav-button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
-        filter: brightness(1.1);
-    }
-
-    /* 點擊效果 (Figma Pressed 狀態) */
-    .nav-button:active {
-        transform: scale(0.95);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-</style>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工具集</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            padding-top: 50px;
+            margin: 0;
+        }
+        .nav-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 90%;
+            max-width: 350px;
+        }
+        .nav-link {
+            /* 讓按鈕大且好按的關鍵 */
+            display: block;
+            padding: 24px; 
+            border-radius: 20px;
+            
+            /* 視覺美化 */
+            text-align: center;
+            text-decoration: none;
+            font-size: 20px;
+            font-weight: 800;
+            color: white;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1); /* 增加一點厚度感 */
+        }
+        /* 各別項目顏色 */
+        .bg-home     { background-color: #4a90e2; } /* 藍 */
+        .bg-calendar { background-color: #ff6b6b; } /* 紅 */
+        .bg-todo     { background-color: #51cf66; } /* 綠 */
+        .bg-bill     { background-color: #fcc419; } /* 黃 */
+        .bg-note     { background-color: #845ef7; } /* 紫 */
+    </style>
+</head>
+<body>
 
 <nav class="nav-container">
-    <a href="index.html" class="nav-button btn-home">🏠 回首頁</a>
-    <a href="calendar0.html" class="nav-button btn-calendar">📅 聚餐日曆</a>
-    <a href="todo-list.html" class="nav-button btn-todo">📝 待辦清單</a>
+    <a href="index.html" class="nav-link bg-home">🏠 首頁導覽</a>
+    <a href="calendar0.html" class="nav-link bg-calendar">📅 聚餐日曆</a>
+    <a href="todo-list.html" class="nav-link bg-todo">📝 待辦清單X</a>
+    <a href="bill-split.html" class="nav-link bg-bill">💰 轉蛋機</a>
+    <a href="diary.html" class="nav-link bg-note">✍️ 心情筆記X</a>
 </nav>
+
+</body>
+</html>
