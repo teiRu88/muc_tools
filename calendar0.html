@@ -107,5 +107,41 @@
     <a href="todo-list.html">待辦清單</a><br>
 </nav>
 
+<div style="text-align:center; margin-top:20px;">
+    <button onclick="exportData()" style="background:#eee;">📥 備份資料 (JSON)</button>
+<br>
+    <button onclick="importData()" style="background:#eee;">📤 還原資料</button>
+</div>
+
+<script>
+function exportData() {
+    const data = localStorage.getItem('calendarNotes');
+    if (!data) return alert("目前沒有資料可備份");
+    const blob = new Blob([data], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `calendar-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+}
+
+function importData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = event => {
+            if(confirm("確定要覆蓋現有備註嗎？")) {
+                localStorage.setItem('calendarNotes', event.target.result);
+                location.reload(); // 重新整理頁面
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+</script>
+
 </body>
 </html>
