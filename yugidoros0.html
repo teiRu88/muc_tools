@@ -106,7 +106,7 @@
         }
 
         document.getElementById('resBox').style.display = 'block';
-        document.getElementById('mainLabel').innerText = `連抽 ${n} 張，至少中 1 張的機率`;
+        document.getElementById('mainLabel').innerText = `先攻抽 ${n} 張，至少 1 張動點的機率`;
         document.getElementById('atLeastOne').innerText = ((1 - pZero) * 100).toFixed(2) + '%';
         document.getElementById('details').innerHTML = detailHtml;
     }
