@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>越攤越平計算機</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        h2 { color: #2c3e50; text-align: center; }
+        .row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+        .add-btn {
+            background-color: #3498db;
+            color: white;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+        .add-btn:hover { background-color: #2980b9; }
+        .calc-btn {
+            background-color: #27ae60;
+            color: white;
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .calc-btn:hover { background-color: #219150; }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f4fd;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .result span {
+            display: block;
+            font-size: 24px;
+            color: #2980b9;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .remove-btn {
+            background-color: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>攤平計算機</h2>
+    <div id="input-fields">
+        <div class="row">
+            <input type="number" placeholder="價格" class="price">
+            <input type="number" placeholder="股數" class="shares">
+            <div style="width: 40px;"></div> </div>
+        <div class="row">
+            <input type="number" placeholder="價格" class="price">
+            <input type="number" placeholder="股數" class="shares">
+            <div style="width: 40px;"></div>
+        </div>
+        <div class="row">
+            <input type="number" placeholder="價格" class="price">
+            <input type="number" placeholder="股數" class="shares">
+            <div style="width: 40px;"></div>
+        </div>
+    </div>
+
+    <button class="add-btn" onclick="addRow()">+ 增加欄位</button>
+    <button class="calc-btn" onclick="calculate()">開始計算</button>
+
+    <div class="result" id="result-box" style="display:none;">
+        總成本：<span id="total-cost">$0</span>
+        總股數：<span id="total-shares">0</span>
+        平均價格：<span id="avg-price">$0</span>
+    </div>
+</div>
+
+<script>
+    function addRow() {
+        const container = document.getElementById('input-fields');
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `
+            <input type="number" placeholder="價格" class="price">
+            <input type="number" placeholder="股數" class="shares">
+            <button class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function calculate() {
+        const prices = document.querySelectorAll('.price');
+        const shares = document.querySelectorAll('.shares');
+        
+        let totalCost = 0;
+        let totalShares = 0;
+
+        for (let i = 0; i < prices.length; i++) {
+            const p = parseFloat(prices[i].value);
+            const s = parseFloat(shares[i].value);
+
+            if (!isNaN(p) && !isNaN(s)) {
+                totalCost += p * s;
+                totalShares += s;
+            }
+        }
+
+if (totalShares > 0) {
+            const avg = totalCost / totalShares;
+            document.getElementById('total-cost').innerText = `$${totalCost.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}`;
+            document.getElementById('total-shares').innerText = totalShares.toLocaleString();
+            document.getElementById('avg-price').innerText = `$${avg.toFixed(2)}`;
+            document.getElementById('result-box').style.display = 'block';
+        } else {
+            alert('請至少輸入一組完整的價格與股數');
+        }
+    }
+</script>
+
+</body>
+</html>
