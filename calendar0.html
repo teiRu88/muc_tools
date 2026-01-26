@@ -3,145 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的聚餐日曆</title>
+    <title>我的決鬥者日曆</title>
     <style>
-        :root { --primary: #ff6b6b; --bg: #f8f9fa; }
-        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
-        .calendar-card { background: white; width: 100%; max-width: 450px; border-radius: 15px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-        .day-label { text-align: center; font-weight: bold; font-size: 13px; color: #999; padding-bottom: 10px; }
-        .day { min-height: 70px; border: 1.5px solid #f0f0f0; border-radius: 10px; padding: 6px; cursor: pointer; transition: all 0.2s; background: #fff; }
-        .day:hover { border-color: var(--primary); background: #fffafb; transform: translateY(-2px); }
-        .date-num { font-size: 14px; font-weight: 600; color: #444; }
-        .note { font-size: 11px; color: var(--primary); margin-top: 5px; line-height: 1.3; font-weight: bold; overflow-wrap: break-word; }
-        button { border: none; background: #f0f0f0; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; }
-        button:hover { background: #e0e0e0; }
-        .today { border: 2px solid var(--primary) !important; background: #fff5f5; }
+        :root { --blue: #4a90e2; --green: #51cf66; --duel: #fff3bf; }
+        body { font-family: sans-serif; background: #f8f9fa; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .calendar-card { background: white; width: 100%; max-width: 400px; border-radius: 15px; padding: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .day-label { text-align: center; font-size: 12px; color: #999; }
+        .day { min-height: 65px; border: 1px solid #eee; border-radius: 8px; padding: 4px; position: relative; }
+        .day.duel-ready { background-color: var(--duel); border-color: #fcc419; }
+        .date-num { font-size: 14px; font-weight: bold; color: #ccc; }
+        .status { font-size: 16px; font-weight: 900; line-height: 1.2; text-align: center; margin-top: 2px; }
+        .ro { color: var(--blue); }
+        .di { color: var(--green); }
+        
+        .controls { margin-top: 15px; width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 8px; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .btn-row { display: flex; gap: 5px; }
+        button { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: #eee; }
+        .btn-apply { background: #444; color: white; }
+        .btn-clear { background: #ff6b6b; color: white; }
     </style>
 </head>
 <body>
 
 <div class="calendar-card">
     <div class="header">
-        <h2 id="monthDisplay">載入中...</h2>
-        <div style="display: flex; gap: 8px;">
+        <h3 id="monthDisplay" style="margin:0"></h3>
+        <div>
             <button onclick="changeMonth(-1)">◀</button>
             <button onclick="changeMonth(1)">▶</button>
         </div>
     </div>
-    <div class="grid" id="calendarGrid">
-        </div>
-    <p style="font-size: 11px; color: #bbb; text-align: center; margin-top: 20px;">點擊日期即可編輯備註，資料會儲存在此瀏覽器中</p>
+    <div class="grid" id="calendarGrid"></div>
+</div>
+
+<div class="controls">
+    <input type="text" id="inputR" placeholder="Ro 日期 (如: 1 6-7 13)">
+    <input type="text" id="inputD" placeholder="Di 日期 (如: 5 10-12)">
+    <div class="btn-row">
+        <button class="btn-apply" onclick="batchUpdate()">更新當月標記</button>
+        <button class="btn-clear" onclick="clearAll()">清空全部紀錄</button>
+    </div>
 </div>
 
 <script>
     let currentDate = new Date();
-    // 關鍵：從 LocalStorage 讀取資料
-    let notesData = JSON.parse(localStorage.getItem('calendarNotes')) || {};
+    let checkData = JSON.parse(localStorage.getItem('calendarChecks')) || {};
 
     function renderCalendar() {
         const grid = document.getElementById('calendarGrid');
-        const monthDisplay = document.getElementById('monthDisplay');
         grid.innerHTML = '';
+        ['日', '一', '二', '三', '四', '五', '六'].forEach(w => grid.innerHTML += `<div class="day-label">${w}</div>`);
 
-        // 建立星期標籤
-        const weeks = ['日', '一', '二', '三', '四', '五', '六'];
-        weeks.forEach(w => {
-            const div = document.createElement('div');
-            div.className = 'day-label';
-            div.innerText = w;
-            grid.appendChild(div);
-        });
+        const y = currentDate.getFullYear(), m = currentDate.getMonth();
+        document.getElementById('monthDisplay').innerText = `${y}年 ${m + 1}月`;
 
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-        monthDisplay.innerText = `${year}年 ${month + 1}月`;
+        const firstDay = new Date(y, m, 1).getDay();
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
 
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const today = new Date();
+        for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
 
-        // 填充月初空白
-        for (let i = 0; i < firstDay; i++) {
-            grid.appendChild(document.createElement('div'));
-        }
-
-        // 生成日期
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateKey = `${year}-${month + 1}-${d}`;
+            const key = `${y}-${m + 1}-${d}`;
+            const r = checkData[key + '-R'], d_state = checkData[key + '-D'];
             const dayDiv = document.createElement('div');
-            dayDiv.className = 'day';
-            
-            // 標記今天
-            if(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
-                dayDiv.classList.add('today');
-            }
-
-            const savedNote = notesData[dateKey] || "";
-            dayDiv.innerHTML = `<div class="date-num">${d}</div><div class="note">${savedNote}</div>`;
-            
-            dayDiv.onclick = () => {
-                const newNote = prompt(`${month+1}月${d}日 備註：`, savedNote);
-                if (newNote !== null) {
-                    notesData[dateKey] = newNote;
-                    localStorage.setItem('calendarNotes', JSON.stringify(notesData));
-                    renderCalendar();
-                }
-            };
+            dayDiv.className = `day ${r && d_state ? 'duel-ready' : ''}`;
+            dayDiv.innerHTML = `
+                <div class="date-num">${d}</div>
+                <div class="status">
+                    ${r ? '<div class="ro">Ro</div>' : ''}
+                    ${d_state ? '<div class="di">Di</div>' : ''}
+                </div>`;
             grid.appendChild(dayDiv);
         }
     }
 
-    function changeMonth(diff) {
-        currentDate.setMonth(currentDate.getMonth() + diff);
-        renderCalendar();
+    function batchUpdate() {
+        const y = currentDate.getFullYear(), m = currentDate.getMonth() + 1;
+        ['R', 'D'].forEach(type => {
+            const val = document.getElementById('input' + type).value.trim();
+            if (!val) return;
+            // 清除當月該類型的舊紀錄（若想疊加可刪除這幾行）
+            for(let d=1; d<=31; d++) delete checkData[`${y}-${m}-${d}-${type}`];
+            
+            val.split(/\s+/).forEach(p => {
+                const range = p.split('-').map(Number);
+                for (let i = range[0]; i <= (range[1] || range[0]); i++) {
+                    checkData[`${y}-${m}-${i}-${type}`] = true;
+                }
+            });
+        });
+        save();
     }
+
+    function clearAll() { if(confirm("確定清空？")) { checkData = {}; save(); } }
+    function save() { localStorage.setItem('calendarChecks', JSON.stringify(checkData)); renderCalendar(); }
+    function changeMonth(n) { currentDate.setMonth(currentDate.getMonth() + n); renderCalendar(); }
 
     renderCalendar();
 </script>
-
-<nav>
-    <a href="index.html">首頁</a><br>
-    <a href="calendar0.html">聚餐日曆</a><br>
-    <a href="todo-list.html">待辦清單</a><br>
-</nav>
-
-<div style="text-align:center; margin-top:20px;">
-    <button onclick="exportData()" style="background:#eee;">📥 備份資料 (JSON)</button>
-<br>
-    <button onclick="importData()" style="background:#eee;">📤 還原資料</button>
-</div>
-
-<script>
-function exportData() {
-    const data = localStorage.getItem('calendarNotes');
-    if (!data) return alert("目前沒有資料可備份");
-    const blob = new Blob([data], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `calendar-backup-${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
-}
-
-function importData() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = e => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = event => {
-            if(confirm("確定要覆蓋現有備註嗎？")) {
-                localStorage.setItem('calendarNotes', event.target.result);
-                location.reload(); // 重新整理頁面
-            }
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-}
-</script>
-
 </body>
 </html>
