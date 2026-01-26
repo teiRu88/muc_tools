@@ -3,85 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>動點機率計算機</title>
+    <title>yugi計算機 - 自定義抽取</title>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); width: 100%; max-width: 400px; }
-        h2 { color: #333; text-align: center; margin-bottom: 20px; }
-        .input-group { margin-bottom: 15px; }
-        label { display: block; font-size: 14px; color: #666; margin-bottom: 5px; }
-        input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 15px; background: #4a90e2; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        button:active { transform: scale(0.98); }
-        .result { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
-        .prob-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
-        .total-prob { border-top: 2px solid #ddd; margin-top: 10px; padding-top: 10px; font-weight: bold; color: #ff6b6b; font-size: 18px; }
+        :root {
+            --primary: #4a90e2;
+            --success: #51cf66;
+            --danger: #ff6b6b;
+            --bg: #f0f2f5;
+        }
+        body { font-family: "PingFang TC", sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { background: white; width: 100%; max-width: 400px; border-radius: 24px; padding: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-top: 0; }
+        
+        .input-card { background: #f8f9fa; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        .field { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; font-weight: bold; color: #888; margin-bottom: 6px; }
+        input { width: 100%; padding: 14px; border: 2px solid #eee; border-radius: 12px; font-size: 18px; box-sizing: border-box; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--primary); background: #fff; }
+        
+        button { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 16px; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.96); opacity: 0.9; }
+
+        .result-box { display: none; margin-top: 25px; border-top: 2px dashed #eee; padding-top: 25px; }
+        .main-result { background: #fff5f5; border: 2px solid var(--danger); border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 20px; }
+        .main-result .label { font-size: 14px; color: var(--danger); font-weight: bold; }
+        .main-result .value { font-size: 36px; font-weight: 900; color: var(--danger); }
+
+        .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 15px; color: #555; }
+        .detail-row b { color: #333; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>初動機率計算 🎯</h2>
-    <div class="input-group">
-        <label>總卡片數 (N)</label>
-        <input type="number" id="totalCards" value="40" min="5">
+<div class="container">
+    <h2>動點機率計算 🃏</h2>
+    
+    <div class="input-card">
+        <div class="field">
+            <label>總卡片張數 (N)</label>
+            <input type="number" id="N" value="40">
+        </div>
+        <div class="field">
+            <label>動點卡數量 (K)</label>
+            <input type="number" id="K" value="9">
+        </div>
+        <div class="field">
+            <label>每次抽取數量 (n)</label>
+            <input type="number" id="drawCount" value="5">
+        </div>
     </div>
-    <div class="input-group">
-        <label>動點卡片數 (K)</label>
-        <input type="number" id="winCards" value="9" min="0">
-    </div>
-    <div class="input-group">
-        <label>每次抽取張數 (n)</label>
-        <input type="number" id="drawCount" value="5" readonly>
-    </div>
-    <button onclick="calculate()">計算機率</button>
 
-    <div id="resultArea" class="result" style="display:none;">
+    <button onclick="calc()">立即計算</button>
+
+    <div class="result-box" id="resBox">
+        <div class="main-result">
+            <div class="label" id="mainLabel">至少中 1 張的機率</div>
+            <div class="value" id="atLeastOne">- %</div>
+        </div>
         <div id="details"></div>
-        <div class="total-prob" id="atLeastOne"></div>
     </div>
 </div>
 
 <script>
-    // 組合數計算 C(n, k)
     function combinations(n, k) {
         if (k < 0 || k > n) return 0;
         if (k === 0 || k === n) return 1;
         if (k > n / 2) k = n - k;
         let res = 1;
-        for (let i = 1; i <= k; i++) {
-            res = res * (n - i + 1) / i;
-        }
+        for (let i = 1; i <= k; i++) res = res * (n - i + 1) / i;
         return res;
     }
 
-    function calculate() {
-        const N = parseInt(document.getElementById('totalCards').value); // 總數
-        const K = parseInt(document.getElementById('winCards').value); // 中獎數
-        const n = 5; // 抽樣數
+    function calc() {
+        const N = parseInt(document.getElementById('N').value);
+        const K = parseInt(document.getElementById('K').value);
+        const n = parseInt(document.getElementById('drawCount').value);
 
-        if (K > N) { alert("中獎卡數不能大於總卡數！"); return; }
+        // 簡單的錯誤檢查
+        if (isNaN(N) || isNaN(K) || isNaN(n)) { alert("請輸入完整數字"); return; }
+        if (K > N) { alert("動點卡數不能大於總數"); return; }
+        if (n > N) { alert("抽取張數不能大於總數"); return; }
 
-        let html = "";
-        let probZero = 0;
+        const totalC = combinations(N, n);
+        let detailHtml = "";
+        let pZero = 0;
 
-        const totalCombos = combinations(N, n);
-
-        for (let k = 0; k <= n; k++) {
-            // 超幾何分佈公式: P(X=k) = [C(K, k) * C(N-K, n-k)] / C(N, n)
-            const comboWin = combinations(K, k);
-            const comboLose = combinations(N - K, n - k);
-            const prob = (comboWin * comboLose) / totalCombos;
+        // 迴圈跑完所有可能的抽中張數 (0 到 n)
+        for (let i = 0; i <= n; i++) {
+            // 如果抽中的張數 i 超過目前中獎卡的總數 K，則機率為 0
+            const prob = (combinations(K, i) * combinations(N - K, n - i)) / totalC;
             const percent = (prob * 100).toFixed(2);
-
-            if (k === 0) probZero = prob;
-
-            html += `<div class="prob-item"><span>動點 ${k} 張:</span> <span>${percent}%</span></div>`;
+            if (i === 0) pZero = prob;
+            
+            // 只有機率大於 0 的才顯示，避免清單過長
+            if (prob > 0) {
+                detailHtml += `
+                    <div class="detail-row">
+                        <span>抽中 <b>${i}</b> 張初動</span>
+                        <span>${percent}%</span>
+                    </div>`;
+            }
         }
 
-        document.getElementById('resultArea').style.display = "block";
-        document.getElementById('details').innerHTML = html;
-        document.getElementById('atLeastOne').innerHTML = `至少中 1 張動點的總機率：${((1 - probZero) * 100).toFixed(2)}%`;
+        document.getElementById('resBox').style.display = 'block';
+        document.getElementById('mainLabel').innerText = `連抽 ${n} 張，至少中 1 張的機率`;
+        document.getElementById('atLeastOne').innerText = ((1 - pZero) * 100).toFixed(2) + '%';
+        document.getElementById('details').innerHTML = detailHtml;
     }
 </script>
 
