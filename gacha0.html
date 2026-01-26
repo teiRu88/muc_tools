@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>極簡轉蛋模擬器</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #121212; color: white; padding: 20px; }
+        .setting-box { background: #222; padding: 15px; border-radius: 10px; display: inline-block; margin-bottom: 20px; }
+        input { width: 50px; padding: 5px; border-radius: 5px; border: none; text-align: center; }
+        .controls { margin: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 5px; border: none; background: #e67e22; color: white; margin: 5px; }
+        button:hover { background: #d35400; }
+        #log { max-width: 500px; margin: 0 auto; background: #1e1e1e; padding: 10px; border-radius: 10px; min-height: 200px; text-align: left; }
+        .item { padding: 5px; border-bottom: 1px solid #333; }
+        .SSR { color: #f1c40f; font-weight: bold; text-shadow: 0 0 5px #f1c40f; }
+        .SR { color: #9b59b6; font-weight: bold; }
+        .R { color: #3498db; }
+        .N { color: #95a5a6; }
+        .summary { margin-top: 10px; color: #aaa; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+    <h1>✨ 轉蛋模擬器</h1>
+
+    <div class="setting-box">
+        機率設定 (%): 
+        SSR <input type="number" id="pSSR" value="1">
+        SR <input type="number" id="pSR" value="3">
+        R <input type="number" id="pR" value="36">
+        N <input type="number" id="pN" value="60">
+    </div>
+
+    <div class="controls">
+        <button onclick="gacha(1)">單抽</button>
+        <button onclick="gacha(10)" style="background: #2980b9;">十連抽</button>
+        <button onclick="clearLog()" style="background: #7f8c8d;">清除紀錄</button>
+    </div>
+
+    <div id="log">
+        <div class="summary">等待抽卡中...</div>
+    </div>
+
+    <script>
+        let totalCount = 0;
+        let ssrCount = 0;
+
+        function gacha(times) {
+            // 讀取目前的機率設定
+            const pSSR = parseFloat(document.getElementById('pSSR').value);
+            const pSR = parseFloat(document.getElementById('pSR').value);
+            const pR = parseFloat(document.getElementById('pR').value);
+            const pN = parseFloat(document.getElementById('pN').value);
+
+            const log = document.getElementById('log');
+            let resultsHTML = "";
+
+            for (let i = 0; i < times; i++) {
+                totalCount++;
+                const roll = Math.random() * 100; // 產生 0~100 的隨機數
+                let rarity = "";
+                let name = "";
+
+                if (roll < pSSR) {
+                    rarity = "SSR";
+                    name = "超稀有傳說角色";
+                    ssrCount++;
+                } else if (roll < pSSR + pSR) {
+                    rarity = "SR";
+                    name = "稀有精英角色";
+                } else if (roll < pSSR + pSR + pR) {
+                    rarity = "R";
+                    name = "普通戰士";
+                } else {
+                    rarity = "N";
+                    name = "雜魚路人";
+                }
+
+                resultsHTML = `<div class="item ${rarity}">[${rarity}] ${name}</div>` + resultsHTML;
+            }
+
+            const summaryHTML = `<div class="summary">累積抽數: ${totalCount} | SSR 總數: ${ssrCount} (機率: ${((ssrCount/totalCount)*100).toFixed(2)}%)</div><hr>`;
+            log.innerHTML = summaryHTML + resultsHTML + log.innerHTML;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '<div class="summary">等待抽卡中...</div>';
+            totalCount = 0;
+            ssrCount = 0;
+        }
+    </script>
+</body>
+</html>
