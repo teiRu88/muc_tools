@@ -1,105 +1,54 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的聚餐日曆</title>
-    <style>
-        :root { --primary: #ff6b6b; --bg: #f8f9fa; }
-        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
-        .calendar-card { background: white; width: 100%; max-width: 450px; border-radius: 15px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-        .day-label { text-align: center; font-weight: bold; font-size: 13px; color: #999; padding-bottom: 10px; }
-        .day { min-height: 70px; border: 1.5px solid #f0f0f0; border-radius: 10px; padding: 6px; cursor: pointer; transition: all 0.2s; background: #fff; }
-        .day:hover { border-color: var(--primary); background: #fffafb; transform: translateY(-2px); }
-        .date-num { font-size: 14px; font-weight: 600; color: #444; }
-        .note { font-size: 11px; color: var(--primary); margin-top: 5px; line-height: 1.3; font-weight: bold; overflow-wrap: break-word; }
-        button { border: none; background: #f0f0f0; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; }
-        button:hover { background: #e0e0e0; }
-        .today { border: 2px solid var(--primary) !important; background: #fff5f5; }
-    </style>
-</head>
-<body>
-
-<div class="calendar-card">
-    <div class="header">
-        <h2 id="monthDisplay">載入中...</h2>
-        <div style="display: flex; gap: 8px;">
-            <button onclick="changeMonth(-1)">◀</button>
-            <button onclick="changeMonth(1)">▶</button>
-        </div>
-    </div>
-    <div class="grid" id="calendarGrid">
-        </div>
-    <p style="font-size: 11px; color: #bbb; text-align: center; margin-top: 20px;">點擊日期即可編輯備註，資料會儲存在此瀏覽器中</p>
-</div>
-
-<script>
-    let currentDate = new Date();
-    // 關鍵：從 LocalStorage 讀取資料
-    let notesData = JSON.parse(localStorage.getItem('calendarNotes')) || {};
-
-    function renderCalendar() {
-        const grid = document.getElementById('calendarGrid');
-        const monthDisplay = document.getElementById('monthDisplay');
-        grid.innerHTML = '';
-
-        // 建立星期標籤
-        const weeks = ['日', '一', '二', '三', '四', '五', '六'];
-        weeks.forEach(w => {
-            const div = document.createElement('div');
-            div.className = 'day-label';
-            div.innerText = w;
-            grid.appendChild(div);
-        });
-
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-        monthDisplay.innerText = `${year}年 ${month + 1}月`;
-
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const today = new Date();
-
-        // 填充月初空白
-        for (let i = 0; i < firstDay; i++) {
-            grid.appendChild(document.createElement('div'));
-        }
-
-        // 生成日期
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateKey = `${year}-${month + 1}-${d}`;
-            const dayDiv = document.createElement('div');
-            dayDiv.className = 'day';
-            
-            // 標記今天
-            if(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
-                dayDiv.classList.add('today');
-            }
-
-            const savedNote = notesData[dateKey] || "";
-            dayDiv.innerHTML = `<div class="date-num">${d}</div><div class="note">${savedNote}</div>`;
-            
-            dayDiv.onclick = () => {
-                const newNote = prompt(`${month+1}月${d}日 備註：`, savedNote);
-                if (newNote !== null) {
-                    notesData[dateKey] = newNote;
-                    localStorage.setItem('calendarNotes', JSON.stringify(notesData));
-                    renderCalendar();
-                }
-            };
-            grid.appendChild(dayDiv);
-        }
+<style>
+    :root {
+        --primary-blue: #4a90e2;
+        --primary-red: #ff6b6b;
+        --primary-green: #51cf66;
+        --text-color: #ffffff;
     }
 
-    function changeMonth(diff) {
-        currentDate.setMonth(currentDate.getMonth() + diff);
-        renderCalendar();
+    .nav-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px; /* 按鈕之間的間距 */
+        padding: 20px;
+        max-width: 300px;
+        margin: 0 auto;
     }
 
-    renderCalendar();
-</script>
+    .nav-button {
+        display: block;
+        text-align: center;
+        text-decoration: none;
+        padding: 16px 24px;
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--text-color);
+        border-radius: 12px;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
 
-</body>
-</html>
+    /* 不同頁面給不同顏色，方便辨識 */
+    .btn-home { background: var(--primary-blue); }
+    .btn-calendar { background: var(--primary-red); }
+    .btn-todo { background: var(--primary-green); }
+
+    /* 懸停效果 (Figma Hover 狀態) */
+    .nav-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        filter: brightness(1.1);
+    }
+
+    /* 點擊效果 (Figma Pressed 狀態) */
+    .nav-button:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<nav class="nav-container">
+    <a href="index.html" class="nav-button btn-home">🏠 回首頁</a>
+    <a href="calendar0.html" class="nav-button btn-calendar">📅 聚餐日曆</a>
+    <a href="todo-list.html" class="nav-button btn-todo">📝 待辦清單</a>
+</nav>
