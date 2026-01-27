@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>duel!</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: #F8F7F4;
+            display: flex;
+            justify-content: center;
+            padding-top: 50px;
+            margin: 0;
+        }
+        .nav-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 90%;
+            max-width: 350px;
+        }
+        .nav-link {
+            /* 讓按鈕大且好按的關鍵 */
+            display: block;
+            padding: 24px; 
+            border-radius: 20px;
+            
+            /* 視覺美化 */
+            text-align: center;
+            text-decoration: none;
+            font-size: 20px;
+            font-weight: 800;
+            color: white;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1); /* 增加一點厚度感 */
+        }
+        /* 各別項目顏色 */
+        .bg-acc      { background-color: #728C9A; } /* 雅緻藍 */
+        .bg-calendar { background-color: #C18B83; } /* 煙燻磚紅 - 溫潤文藝 */
+        .bg-yugi     { background-color: #93A681; } /* 鼠尾草綠 - 歐風植栽感 */
+        .bg-gacha    { background-color: #D4B483; } /* 焦糖燕麥 - 暖心歐式下午茶 */
+        .bg-stockmm  { background-color: #9B89A1; } /* 丁香灰紫 - 神祕現代感 */
+    </style>
+</head>
+<body>
+
+<nav class="nav-container">
+    <a href="acc0.html" class="nav-link bg-acc">🏠 記帳本</a>
+    <a href="calendar0.html" class="nav-link bg-calendar">📅 日曆</a>
+    <a href="yugidoros0.html" class="nav-link bg-yugi">📝 yugi起手機率α</a>
+    <a href="yugidoros1.html" class="nav-link bg-yugi">📝 yugi補點機率β</a>
+    <a href="gacha0.html" class="nav-link bg-gacha">💰 轉蛋機</a>
+    <a href="stockmm0.html" class="nav-link bg-stockmm">✍️ 攤平計算機</a>
+</nav>
+
+</body>
+
+</html>
