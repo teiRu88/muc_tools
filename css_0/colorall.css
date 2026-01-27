@@ -1,6 +1,6 @@
 :root{
-    --allbkcolor01: #F8F7F4; 
-    --color02: #C9ADA7; 
+    --allbkcolor01: #F2F0EB; /* 暖亞麻色 */
+    --btcolor01: rgba(255, 255, 255, 0.4); 
     --color03: #9A8C98; 
     --color04: #4A4E69;
     --color05: #E5E5E5;

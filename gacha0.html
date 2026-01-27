@@ -1,22 +1,152 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>轉蛋模擬器</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #121212; color: white; padding: 20px; }
-        .setting-box { background: #222; padding: 15px; border-radius: 10px; display: inline-block; margin-bottom: 20px; }
-        input { width: 50px; padding: 5px; border-radius: 5px; border: none; text-align: center; }
-        .controls { margin: 20px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 5px; border: none; background: #e67e22; color: white; margin: 5px; }
-        button:hover { background: #d35400; }
-        #log { max-width: 500px; margin: 0 auto; background: #1e1e1e; padding: 10px; border-radius: 10px; min-height: 200px; text-align: left; }
-        .item { padding: 5px; border-bottom: 1px solid #333; }
-        .SSR { color: #f1c40f; font-weight: bold; text-shadow: 0 0 5px #f1c40f; }
-        .SR { color: #9b59b6; font-weight: bold; }
-        .R { color: #3498db; }
-        .N { color: #95a5a6; }
-        .summary { margin-top: 10px; color: #aaa; font-size: 0.9em; }
+        :root {
+            --bg-color: #F2F0EB;
+            --card-bg: #FFFFFF;
+            --text-dark: #3D3D3D;
+            --ssr-color: #D4AF37; /* 金 */
+            --sr-color: #9B59B6;
+            --r-color: #3498DB;
+            --n-color: #95A5A6;
+            --btn-transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            letter-spacing: 0.05em;
+        }
+
+        h1 { font-size: 22px; margin-bottom: 20px; font-weight: 700; color: #1a1a1a; }
+
+        /* 機率設定區塊 */
+        .setting-box {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 400px;
+            padding: 16px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-group { text-align: center; }
+        .input-group label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 5px; color: #888; }
+        
+        input {
+            width: 100%;
+            padding: 10px 5px;
+            border: 1px solid #EEE;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 15px;
+            background: #FAFAFA;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        /* 按鈕區 */
+        .controls {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 16px 0;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 16px;
+            border: none;
+            transition: var(--btn-transition);
+        }
+
+        button:active { transform: scale(0.95); opacity: 0.9; }
+
+        .btn-single { background: #3D3D3D; color: white; }
+        .btn-multi  { background: #4834D4; color: white; }
+        .btn-clear  { background: transparent; color: #888; border: 1px solid #DDD; flex: 0.6; }
+
+        /* 日誌紀錄區 */
+        #log {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 24px;
+            min-height: 300px;
+            padding: 15px;
+        }
+
+        .summary-card {
+            background: #FFF;
+            padding: 15px;
+            border-radius: 16px;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .summary-card b { color: var(--text-dark); font-size: 15px; }
+
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(-15px) scale(0.95); /* 從上方稍微縮小滑入 */
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    }
+}
+
+.item {
+    background: white;
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    font-size: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* 確保動畫執行 */
+    animation: fadeIn 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    border-left: 4px solid #DDD;
+}
+
+        /* 稀有度樣式 */
+        .SSR { border-left-color: var(--ssr-color); background: ##FFD567; }
+        .SSR b { color: var(--ssr-color); text-shadow: 0 0 1px rgba(212,175,55,0.2); }
+        
+        .SR  { border-left-color: var(--sr-color); }
+        .SR  b { color: var(--sr-color); }
+        
+        .R   { border-left-color: var(--r-color); }
+        .R   b { color: var(--r-color); }
+        
+        .N   { border-left-color: var(--n-color); color: #888; }
     </style>
 </head>
 <body>
@@ -24,70 +154,91 @@
     <h1>✨ 轉蛋模擬器</h1>
 
     <div class="setting-box">
-        機率設定 (%): 
-        SSR <input type="number" id="pSSR" value="1">
-        SR <input type="number" id="pSR" value="3">
-        R <input type="number" id="pR" value="36">
-        N <input type="number" id="pN" value="60">
+        <div class="input-group">
+            <label>SSR</label>
+            <input type="number" id="pSSR" value="1" inputmode="decimal">
+        </div>
+        <div class="input-group">
+            <label>SR</label>
+            <input type="number" id="pSR" value="3" inputmode="decimal">
+        </div>
+        <div class="input-group">
+            <label>R</label>
+            <input type="number" id="pR" value="36" inputmode="decimal">
+        </div>
+        <div class="input-group">
+            <label>N</label>
+            <input type="number" id="pN" value="60" inputmode="decimal">
+        </div>
     </div>
 
     <div class="controls">
-        <button onclick="gacha(1)">單抽</button>
-        <button onclick="gacha(10)" style="background: #2980b9;">十連抽</button>
-        <button onclick="clearLog()" style="background: #7f8c8d;">清除紀錄</button>
+        <button class="btn-single" onclick="gacha(1)">單抽</button>
+        <button class="btn-multi" onclick="gacha(10)">十連抽</button>
+        <button class="btn-clear" onclick="clearLog()">清除</button>
     </div>
 
     <div id="log">
-        <div class="summary">等待抽卡中...</div>
+        <div class="summary-card">等待...</div>
     </div>
 
     <script>
-        let totalCount = 0;
-        let ssrCount = 0;
+     let totalCount = 0;
+let ssrCount = 0;
 
-        function gacha(times) {
-            // 讀取目前的機率設定
-            const pSSR = parseFloat(document.getElementById('pSSR').value);
-            const pSR = parseFloat(document.getElementById('pSR').value);
-            const pR = parseFloat(document.getElementById('pR').value);
-            const pN = parseFloat(document.getElementById('pN').value);
+function gacha(times) {
+    const pSSR = parseFloat(document.getElementById('pSSR').value) || 0;
+    const pSR = parseFloat(document.getElementById('pSR').value) || 0;
+    const pR = parseFloat(document.getElementById('pR').value) || 0;
+    const pN = parseFloat(document.getElementById('pN').value) || 0;
 
-            const log = document.getElementById('log');
-            let resultsHTML = "";
+    const log = document.getElementById('log');
+    
+    // 1. 移除初始的「等待..」訊息
+    if (totalCount === 0) log.innerHTML = '';
 
-            for (let i = 0; i < times; i++) {
-                totalCount++;
-                const roll = Math.random() * 100; // 產生 0~100 的隨機數
-                let rarity = "";
-                let name = "";
+    let newItemsHTML = "";
 
-                if (roll < pSSR) {
-                    rarity = "SSR";
-                    name = "超稀有傳說角色";
-                    ssrCount++;
-                } else if (roll < pSSR + pSR) {
-                    rarity = "SR";
-                    name = "稀有精英角色";
-                } else if (roll < pSSR + pSR + pR) {
-                    rarity = "R";
-                    name = "普通戰士";
-                } else {
-                    rarity = "N";
-                    name = "雜魚路人";
-                }
+    for (let i = 0; i < times; i++) {
+        totalCount++;
+        const roll = Math.random() * 100;
+        let rarity = "";
+        let name = "";
 
-                resultsHTML = `<div class="item ${rarity}">[${rarity}] ${name}</div>` + resultsHTML;
-            }
-
-            const summaryHTML = `<div class="summary">累積抽數: ${totalCount} | SSR 總數: ${ssrCount} (機率: ${((ssrCount/totalCount)*100).toFixed(2)}%)</div><hr>`;
-            log.innerHTML = summaryHTML + resultsHTML + log.innerHTML;
+        if (roll < pSSR) {
+            rarity = "SSR"; name = "超稀有傳說角色"; ssrCount++;
+        } else if (roll < pSSR + pSR) {
+            rarity = "SR"; name = "稀有精英角色";
+        } else if (roll < pSSR + pSR + pR) {
+            rarity = "R"; name = "普通戰士";
+        } else {
+            rarity = "N"; name = "雜魚路人";
         }
 
-        function clearLog() {
-            document.getElementById('log').innerHTML = '<div class="summary">等待抽卡中...</div>';
-            totalCount = 0;
-            ssrCount = 0;
-        }
+        newItemsHTML += `<div class="item ${rarity}"><b>${rarity}</b> <span>${name}</span></div>`;
+    }
+
+    // 2. 更新摘要內容 (先移除舊摘要，再插入新摘要)
+    const oldSummary = log.querySelector('.summary-card');
+    if (oldSummary) oldSummary.remove();
+
+    const rate = totalCount > 0 ? ((ssrCount / totalCount) * 100).toFixed(2) : 0;
+    const summaryHTML = `
+        <div class="summary-card">
+            累積抽數 <b>${totalCount}</b> &nbsp; | &nbsp; SSR 總數 <b>${ssrCount}</b><br>
+            實際機率：<b>${rate}%</b>
+        </div>`;
+    
+    // 3. 將新內容插入到最前面，這樣動畫才會觸發
+    log.insertAdjacentHTML('afterbegin', newItemsHTML);
+    log.insertAdjacentHTML('afterbegin', summaryHTML);
+}
+
+function clearLog() {
+    document.getElementById('log').innerHTML = '<div class="summary-card">等待..</div>';
+    totalCount = 0;
+    ssrCount = 0;
+}
     </script>
 </body>
 </html>
