@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>簡單記帳 v3</title>
+    <style>
+        :root { --primary-color: #4CAF50; --bg-color: #f4f7f6; --accent-color: #e91e63; }
+        body { font-family: sans-serif; background-color: var(--bg-color); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; padding-bottom: 50px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 450px; box-sizing: border-box; margin-bottom: 15px; }
+        h2 { text-align: center; margin-top: 0; color: #333; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 5px; color: #666; font-size: 14px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        
+        .category-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
+        .cat-btn { padding: 12px; border: 1px solid #ddd; background: #fff; border-radius: 8px; text-align: center; font-size: 15px; cursor: pointer; font-weight: 500; }
+        .cat-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+
+        .submit-btn { width: 100%; padding: 15px; background-color: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; margin-top: 10px; }
+
+        /* 統計區塊 */
+        .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; width: 100%; max-width: 450px; }
+        .summary-item { background: #fff; padding: 10px; border-radius: 10px; border-left: 4px solid var(--primary-color); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .summary-label { font-size: 12px; color: #777; }
+        .summary-value { font-size: 16px; font-weight: bold; color: #333; display: block; margin-top: 4px; }
+
+        /* 備份按鈕區 */
+        .backup-zone { display: flex; gap: 10px; margin-top: 10px; width: 100%; }
+        .backup-btn { flex: 1; padding: 10px; font-size: 13px; background: #eee; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; color: #555; }
+
+        .history-section { width: 100%; max-width: 450px; margin-top: 15px; }
+        .history-item { background: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .item-info .date { font-size: 11px; color: #999; }
+        .item-info .cat { font-weight: bold; color: #333; font-size: 14px; }
+        .item-amount { font-size: 16px; font-weight: bold; color: var(--accent-color); }
+        .delete-btn { color: #ddd; border: none; background: none; font-size: 20px; margin-left: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>極速記帳</h2>
+    
+    <div class="input-group">
+        <label>日期</label>
+        <input type="date" id="date">
+    </div>
+
+    <div class="input-group">
+        <label>選擇分類</label>
+        <div class="category-grid">
+            <div class="cat-btn" onclick="selectCat('餐費')">餐費</div>
+            <div class="cat-btn" onclick="selectCat('其他')">其他</div>
+            <div class="cat-btn" onclick="selectCat('必要支出')">必要支出</div>
+            <div class="cat-btn" onclick="selectCat('非必支出')">非必支出</div>
+
+        </div>
+        <input type="hidden" id="category" value="餐費">
+    </div>
+
+    <div class="input-group">
+        <label>金額</label>
+        <input type="number" id="amount" inputmode="decimal" placeholder="輸入金額">
+    </div>
+
+    <div class="input-group">
+        <label>備註</label>
+        <input type="text" id="note" placeholder="備註細項...">
+    </div>
+
+    <button class="submit-btn" onclick="saveData()">新增紀錄</button>
+
+    <!-- 備份功能按鈕 -->
+    <div class="backup-zone">
+        <button class="backup-btn" onclick="exportData()">匯出備份 (JSON)</button>
+        <button class="backup-btn" onclick="document.getElementById('importFile').click()">匯入備份</button>
+        <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+    </div>
+</div>
+
+<div class="summary-grid" id="summaryArea">
+    <div class="summary-item"><span class="summary-label">餐費</span><span class="summary-value" id="sum-餐費">$0</span></div>
+    <div class="summary-item" style="border-left-color: #9C27B0;"><span class="summary-label">其他</span><span class="summary-value" id="sum-其他">$0</span></div>
+    <div class="summary-item" style="border-left-color: #2196F3;"><span class="summary-label">必要支出</span><span class="summary-value" id="sum-必要支出">$0</span></div>
+    <div class="summary-item" style="border-left-color: #FF9800;"><span class="summary-label">非必支出</span><span class="summary-value" id="sum-非必支出">$0</span></div>
+
+</div>
+
+<div class="history-section" id="historyList">
+    <h3 style="color:#555; font-size: 16px;">最近紀錄</h3>
+</div>
+
+<script>
+    let records = JSON.parse(localStorage.getItem('myRecords')) || [];
+    const categories = ['餐費', '其他', '必要支出', '非必支出'];
+
+    document.getElementById('date').valueAsDate = new Date();
+    selectCat('餐費');
+    renderList();
+
+    function selectCat(cat) {
+        document.getElementById('category').value = cat;
+        document.querySelectorAll('.cat-btn').forEach(b => {
+            b.classList.toggle('active', b.innerText === cat);
+        });
+    }
+
+    function saveData() {
+        const date = document.getElementById('date').value;
+        const category = document.getElementById('category').value;
+        const amount = parseFloat(document.getElementById('amount').value);
+        const note = document.getElementById('note').value;
+
+        if (isNaN(amount) || amount <= 0) { alert('請輸入金額！'); return; }
+
+        records.unshift({ id: Date.now(), date, category, amount, note });
+        updateStorage();
+        document.getElementById('amount').value = '';
+        document.getElementById('note').value = '';
+    }
+
+    function deleteRecord(id) {
+        if(confirm('確定刪除？')) {
+            records = records.filter(r => r.id !== id);
+            updateStorage();
+        }
+    }
+
+    function updateStorage() {
+        localStorage.setItem('myRecords', JSON.stringify(records));
+        renderList();
+    }
+
+    // --- 備份功能 ---
+    function exportData() {
+        if (records.length === 0) { alert('目前沒有資料可以匯出'); return; }
+        const dataStr = JSON.stringify(records, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `記帳備份_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (confirm(`確定匯入 ${imported.length} 筆資料嗎？這將會取代目前的紀錄。`)) {
+                    records = imported;
+                    updateStorage();
+                }
+            } catch (err) {
+                alert('檔案格式錯誤！');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function renderList() {
+        const totals = { '餐費': 0, '必要支出': 0, '非必支出': 0, '其他': 0 };
+        const listDiv = document.getElementById('historyList');
+        listDiv.innerHTML = '<h3 style="color:#555; font-size: 16px;">最近紀錄</h3>';
+
+        records.forEach(r => {
+            if (totals.hasOwnProperty(r.category)) totals[r.category] += parseFloat(r.amount);
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <div class="item-info">
+                    <div class="date">${r.date}</div>
+                    <div class="cat">${r.category}</div>
+                    <div class="note">${r.note || ''}</div>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <span class="item-amount">$${parseFloat(r.amount).toLocaleString()}</span>
+                    <button class="delete-btn" onclick="deleteRecord(${r.id})">×</button>
+                </div>`;
+            listDiv.appendChild(item);
+        });
+
+        categories.forEach(cat => {
+            document.getElementById(`sum-${cat}`).innerText = `$${totals[cat].toLocaleString()}`;
+        });
+    }
+</script>
+
+</body>
+</html>
