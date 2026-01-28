@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duel!</title>
+    <link rel="stylesheet" href="css_0/colorall.css">
+    <style>
+        body {
+            font-family: "PingFang TC", "STHeiti", sans-serif;
+            background-color: var(--allbkcolor01);
+            display: flex;
+            justify-content: center;
+            padding-top: 60px;
+            margin: 0;
+            color: #434343;
+        }
+
+        .nav-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 85%;
+            max-width: 360px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 22px 28px;
+            border-radius: 16px; /* 稍微小圓角 */
+            text-decoration: none;
+            font-size: 17px;
+            font-weight: 500;
+            color: #555;
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px); /* 磨砂玻璃效果 */
+            letter-spacing: 0.05em;
+            transition: transform 0.1s ease; /* 點擊回饋 */
+        }
+
+        /* 手機觸碰瞬間的視覺縮放 */
+        .nav-link:active {
+            transform: scale(0.97);
+            background-color: #FAFAFA;
+        }
+
+        /* 細微的左側色條區分功能 */
+        .nav-link::before {
+            content: "";
+            width: 3px;
+            height: 20px;
+            margin-right: 15px;
+            border-radius: 10px;
+            background: #CCC;
+        }
+
+        /* 雅緻藍  */
+        .bg-acc::before      { background: #A7BBC7; } 
+        /* 溫潤紅  */
+        .bg-calendar::before { background: #D1B3AF; } 
+        /* 植物綠 */
+        .bg-yugi::before     { background: #B4C4A8; } 
+        /* 麥草金  */
+        .bg-gacha::before    { background: #D9C5A3; } 
+        /* 煙燻紫  */
+        .bg-stockmm::before  { background: #C1B5C6; }
+
+
+
+        /* 文字稍微加寬 */
+        .text-label {
+            flex-grow: 1;
+        }
+
+        /* 箭頭細節，增加引導感 */
+        .nav-link::after {
+            content: "→";
+            font-size: 14px;
+            opacity: 0.3;
+            transition: 0.3s;
+        }
+
+    </style>
+</head>
+<body>
+
+<nav class="nav-container">
+    <a href="all_FX.html" class="nav-link bg-acc">
+        <span class="text-label">FX</span>
+    </a>
+    <a href="us_stock_X8.html" class="nav-link bg-calendar">
+        <span class="text-label">stockX8</span>
+    </a>
+    <a href="0.html" class="nav-link bg-yugi">
+        <span class="text-label">📝 yugi 起手機率 α</span>
+    </a>
+    <a href="1.html" class="nav-link bg-yugi">
+        <span class="text-label">📝 yugi 補點機率 β</span>
+    </a>
+    <a href="0.html" class="nav-link bg-gacha">
+        <span class="text-label">💰 轉蛋機</span>
+    </a>
+    <a href="0.html" class="nav-link bg-stockmm">
+        <span class="text-label">✍️ 攤平計算機</span>
+    </a>
+</nav>
+
+</body>
+</html>
