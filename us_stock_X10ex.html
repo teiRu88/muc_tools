@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { background: #F2F0EB; margin: 0; padding: 10px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 1400px; }
+        .quote-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /*顯示一列 5 個*/
+            gap: 8px;
+        }
+        /* 平板看改為 3 欄 */
+        @media (max-width: 1200px) { .quote-grid { grid-template-columns: repeat(3, 1fr); } }
+
+        /* 手機看為 2 欄或 1 欄 */
+        @media (max-width: 768px) { .quote-grid { grid-template-columns: repeat(2, 1fr); } }
+        .widget-wrapper { background: #FFF; border-radius: 4px; min-height: 125px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="quote-grid" id="container"></div>
+</div>
+
+<script>
+        /*可直接在此增減監看項目*/
+    const symbols = [
+        "SPX500", "NASDAQ:SOXX", "NYSE:TSM", "NASDAQ:TLT", "GOLD", 
+        "TVC:UKOIL", "FX_IDC:USDTWD", "FX:USDJPY", "FRED:T10YIE", "FRED:T10Y2Y",
+    ];
+
+    const box = document.getElementById('container');
+
+    async function load() {
+        for (const sym of symbols) {
+            const div = document.createElement('div');
+            div.className = 'widget-wrapper';
+            box.appendChild(div);
+
+            const s = document.createElement('script');
+            s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js';
+            s.async = true;
+            s.innerHTML = JSON.stringify({
+                "symbol": sym,
+                "width": "100%",
+                "colorTheme": "light",
+                "isTransparent": true,
+                "locale": "zh_TW"
+            });
+            
+            div.appendChild(s);
+            /*間隔 1357 毫秒載入下一個,避免密集請求被擋*/
+            await new Promise(r => setTimeout(r, 1357));
+        }
+    }
+
+    load();
+</script>
+
+</body>
+</html>
