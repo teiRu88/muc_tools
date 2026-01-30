@@ -2,7 +2,9 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+    /*手機瀏覽器預設模擬PC桌面寬度結果max-width:1200px失效.在head加viewport那行讓手機瀏覽器按實際寬度讀取CSS*/
         body { background: #F2F0EB; margin: 0; padding: 10px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1400px; }
         .quote-grid {
@@ -10,14 +12,15 @@
             grid-template-columns: repeat(5, 1fr); /*顯示一列 5 個*/
             gap: 8px;
         }
-        /* 平板看改為 3 欄 */
+        /* 1200px以下顯示3欄 */
         @media (max-width: 1200px) { .quote-grid { grid-template-columns: repeat(3, 1fr); } }
-
-        /* 手機看為 2 欄或 1 欄 */
         @media (max-width: 768px) { .quote-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 440px) { .quote-grid { grid-template-columns: repeat(1, 1fr); } }
+
         .widget-wrapper { background: #FFF; border-radius: 4px; min-height: 125px; }
     </style>
 </head>
+
 <body>
 
 <div class="container">
@@ -25,7 +28,7 @@
 </div>
 
 <script>
-        /*可直接在此增減監看項目*/
+        /*可在此直接增減監看項目(因SOX不開放給小工具抓取數據.只好用ETF(SOXX)代替)*/
     const symbols = [
         "SPX500", "NASDAQ:SOXX", "NYSE:TSM", "NASDAQ:TLT", "GOLD", 
         "TVC:UKOIL", "FX_IDC:USDTWD", "FX:USDJPY", "FRED:T10YIE", "FRED:T10Y2Y",
