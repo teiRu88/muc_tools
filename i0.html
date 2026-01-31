@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Duel!</title>
+    <title>duel0</title>
     <link rel="stylesheet" href="css_0/colorall.css">
     <style>
         body {
@@ -41,13 +40,13 @@
             transition: transform 0.1s ease; /* 點擊回饋 */
         }
 
-        /* 手機觸碰瞬間的視覺縮放 */
+        /* 手機觸碰瞬間的縮放 */
         .nav-link:active {
             transform: scale(0.97);
             background-color: #FAFAFA;
         }
 
-        /* 細微的左側色條區分功能 */
+        /* 左側小色條 */
         .nav-link::before {
             content: "";
             width: 3px;
@@ -57,16 +56,16 @@
             background: #CCC;
         }
 
-        /* 雅緻藍  */
-        .bg-01::before      { background: #A7BBC7; } 
-        /* 溫潤紅  */
-        .bg-02::before { background: #D1B3AF; } 
-        /* 植物綠 */
-        .bg-03::before     { background: #B4C4A8; } 
-        /* 麥草金  */
-        .bg-04::before    { background: #D9C5A3; } 
-        /* 煙燻紫  */
-        .bg-05::before  { background: #C1B5C6; }
+        /* 雅緻藍 - 記帳 */
+        .bg-acc::before      { background: #A7BBC7; } 
+        /* 溫潤紅 - 日曆 */
+        .bg-calendar::before { background: #D1B3AF; } 
+        /* 植物綠 - yugi */
+        .bg-yugi::before     { background: #B4C4A8; } 
+        /* 麥草金 - 轉蛋 */
+        .bg-gacha::before    { background: #D9C5A3; } 
+        /* 煙燻紫 */
+        .bg-stockmm::before  { background: #C1B5C6; }
 
 
 
@@ -75,7 +74,7 @@
             flex-grow: 1;
         }
 
-        /* 加個箭頭 */
+        /* 箭頭 */
         .nav-link::after {
             content: "→";
             font-size: 14px;
@@ -88,26 +87,25 @@
 <body>
 
 <nav class="nav-container">
-    <a href="all_FX.html" class="nav-link bg-01">
-        <span class="text-label">FX</span>
+    <a href="tool_s/acc0.html" class="nav-link bg-acc">
+        <span class="text-label">🏠 記帳本</span>
     </a>
-    <a href="us_stock_X10ex.html" class="nav-link bg-02">
-        <span class="text-label">stockX10e</span>
+    <a href="tool_s/calendar0.html" class="nav-link bg-calendar">
+        <span class="text-label">📅 日曆</span>
     </a>
-    <a href="0.html" class="nav-link bg-03">
-        <span class="text-label">📝</span>
+    <a href="tool_s/yugidoros0.html" class="nav-link bg-yugi">
+        <span class="text-label">📝 yugi 起手機率 α</span>
     </a>
-    <a href="1.html" class="nav-link bg-03">
-        <span class="text-label">📝 </span>
+    <a href="tool_s/yugidoros1.html" class="nav-link bg-yugi">
+        <span class="text-label">📝 yugi 補點機率 β</span>
     </a>
-    <a href="0.html" class="nav-link bg-04">
-        <span class="text-label">💰</span>
+    <a href="tool_s/gacha0.html" class="nav-link bg-gacha">
+        <span class="text-label">💰 轉蛋機</span>
     </a>
-    <a href="0.html" class="nav-link bg-05">
-        <span class="text-label">✍️</span>
+    <a href="X" class="nav-link bg-stockmm">
+        <span class="text-label">✍️ 工事中X</span>
     </a>
 </nav>
 
 </body>
 </html>
-

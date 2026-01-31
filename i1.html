@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -56,16 +57,16 @@
             background: #CCC;
         }
 
-        /* 雅緻藍 - 記帳 */
-        .bg-acc::before      { background: #A7BBC7; } 
-        /* 溫潤紅 - 日曆 */
-        .bg-calendar::before { background: #D1B3AF; } 
-        /* 植物綠 - yugi */
-        .bg-yugi::before     { background: #B4C4A8; } 
-        /* 麥草金 - 轉蛋 */
-        .bg-gacha::before    { background: #D9C5A3; } 
-        /* 煙燻紫 - 攤平 */
-        .bg-stockmm::before  { background: #C1B5C6; }
+        /* 雅緻藍  */
+        .bg-01::before      { background: #A7BBC7; } 
+        /* 溫潤紅  */
+        .bg-02::before { background: #D1B3AF; } 
+        /* 植物綠 */
+        .bg-03::before     { background: #B4C4A8; } 
+        /* 麥草金  */
+        .bg-04::before    { background: #D9C5A3; } 
+        /* 煙燻紫  */
+        .bg-05::before  { background: #C1B5C6; }
 
 
 
@@ -74,7 +75,7 @@
             flex-grow: 1;
         }
 
-        /* 箭頭細節，增加引導感 */
+        /* 加個箭頭 */
         .nav-link::after {
             content: "→";
             font-size: 14px;
@@ -87,23 +88,23 @@
 <body>
 
 <nav class="nav-container">
-    <a href="acc0.html" class="nav-link bg-acc">
-        <span class="text-label">🏠 記帳本</span>
+    <a href="kabu_s/all_FX.html" class="nav-link bg-01">
+        <span class="text-label">FX</span>
     </a>
-    <a href="calendar0.html" class="nav-link bg-calendar">
-        <span class="text-label">📅 日曆</span>
+    <a href="kabu_s/us_stock_X10ex.html" class="nav-link bg-02">
+        <span class="text-label">stockX10e</span>
     </a>
-    <a href="yugidoros0.html" class="nav-link bg-yugi">
-        <span class="text-label">📝 yugi 起手機率 α</span>
+    <a href="kabu_s/averaging_down.html" class="nav-link bg-03">
+        <span class="text-label">📝averagingDown </span>
     </a>
-    <a href="yugidoros1.html" class="nav-link bg-yugi">
-        <span class="text-label">📝 yugi 補點機率 β</span>
+    <a href="kabu_s/scaling_in.html" class="nav-link bg-03">
+        <span class="text-label">📝scalingIn </span>
     </a>
-    <a href="gacha0.html" class="nav-link bg-gacha">
-        <span class="text-label">💰 轉蛋機</span>
+    <a href="0.html" class="nav-link bg-04">
+        <span class="text-label">💰</span>
     </a>
-    <a href="stockmm0.html" class="nav-link bg-stockmm">
-        <span class="text-label">✍️ 攤平計算機</span>
+    <a href="0.html" class="nav-link bg-05">
+        <span class="text-label">✍️</span>
     </a>
 </nav>
 
