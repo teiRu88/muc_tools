@@ -2,88 +2,132 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>分批進場試算</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ScaleIn Pro</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F2F0EB; margin: 0; padding: 15px; color: #333; }
-        .container { max-width: 500px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 12px; shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        h3 { margin-top: 0; text-align: center; color: #5D5C58; }
-        .input-box { margin-bottom: 20px; }
-        label { display: block; font-size: 14px; margin-bottom: 5px; color: #666; }
-        input { width: 100%; padding: 12px; border: 1px solid #DDD; border-radius: 8px; font-size: 16px; box-sizing: border-box; background: #FAFAFA; }
-        .row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
-        .row div { flex: 1; }
-        .result-area { margin-top: 20px; border-top: 2px solid #F2F0EB; padding-top: 15px; }
-        .res-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #EEE; font-size: 15px; }
-        .res-item span:last-child { font-weight: bold; color: #27ae60; }
-        .warning { color: #e74c3c; font-size: 12px; text-align: center; margin-top: 10px; }
+        body { font-family: -apple-system, system-ui; background: #F2F0EB; margin: 0; padding: 15px; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); max-width: 450px; margin: auto; }
+        h2 { text-align: center; color: #5D5C58; margin: 0 0 20px 0; font-size: 20px; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #DDD; border-radius: 8px; font-size: 16px; box-sizing: border-box; background: #FAFAFA; outline: none; }
+        .flex { display: flex; gap: 10px; }
+        
+        /* 開關樣式 */
+        .switch-area { display: flex; align-items: center; justify-content: space-between; background: #F8F9FA; padding: 10px; border-radius: 8px; margin: 15px 0; border: 1px solid #EEE; }
+        .switch-label { font-size: 14px; font-weight: bold; color: #555; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #27ae60; }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        .result-header { display: flex; justify-content: space-between; padding: 10px; background: #EBE9E4; border-radius: 5px; font-weight: bold; font-size: 13px; margin-top: 10px; }
+        .res-item { display: flex; justify-content: space-between; padding: 12px 10px; border-bottom: 1px solid #EEE; font-size: 15px; }
+        .res-item span:last-child { color: #27ae60; font-weight: bold; }
+        .summary { text-align: center; font-size: 12px; color: #999; margin-top: 15px; line-height: 1.6; }
+        .weight-tag { font-size: 10px; background: #E8F5E9; color: #2E7D32; padding: 2px 6px; border-radius: 10px; margin-left: 5px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card">
-        <h3>分批進場試算</h3>
-        
-        <div class="input-box">
-            <label>總投資金額</label>
-            <input type="number" id="total" value="100000" oninput="calc()">
-        </div>
-
-        <div id="inputs">
-            <div class="row">
-                <div><label>點位</label><input type="number" class="p" value="30000" oninput="calc()"></div>
-                <div><label>比例 %</label><input type="number" class="r" value="20" oninput="calc()"></div>
-            </div>
-            <div class="row">
-                <div><input type="number" class="p" value="28500" oninput="calc()"></div>
-                <div><input type="number" class="r" value="15" oninput="calc()"></div>
-            </div>
-            <div class="row">
-                <div><input type="number" class="p" value="27000" oninput="calc()"></div>
-                <div><input type="number" class="r" value="25" oninput="calc()"></div>
-            </div>
-            <div class="row">
-                <div><input type="number" class="p" value="25500" oninput="calc()"></div>
-                <div><input type="number" class="r" value="15" oninput="calc()"></div>
-            </div>
-            <div class="row">
-                <div><input type="number" class="p" value="24000" oninput="calc()"></div>
-                <div><input type="number" class="r" value="25" oninput="calc()"></div>
-            </div>
-        </div>
-
-        <div id="warn" class="warning"></div>
-
-        <div class="result-area" id="res">
-            </div>
+<div class="card">
+    <h2>ScaleIn 策略計算機</h2>
+    
+    <div class="input-group">
+        <label>總投資資金 (NTD)</label>
+        <input type="number" id="total" value="1000000" oninput="run()">
     </div>
+
+    <div class="flex">
+        <div class="input-group" style="flex:1">
+            <label>起始點位 (高)</label>
+            <input type="number" id="high" value="30000" oninput="run()">
+        </div>
+        <div class="input-group" style="flex:1">
+            <label>目標底部 (低)</label>
+            <input type="number" id="low" value="24000" oninput="run()">
+        </div>
+    </div>
+
+    <div class="input-group">
+        <label>進場批次</label>
+        <select id="steps" onchange="run()">
+            <option value="5">5 組</option>
+            <option value="8" selected>8 組</option>
+            <option value="10">10 組</option>
+        </select>
+    </div>
+
+    <div class="switch-area">
+        <span class="switch-label">越跌買越多 (加權模式)</span>
+        <label class="switch">
+            <input type="checkbox" id="weightMode" onchange="run()" checked>
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="result-header">
+        <span>進場點位</span>
+        <span>預計投入</span>
+    </div>
+    <div id="res"></div>
+    
+    <div class="summary" id="avgPrice"></div>
 </div>
 
 <script>
-    function calc() {
+    function run() {
         const total = parseFloat(document.getElementById('total').value) || 0;
-        const ps = document.getElementsByClassName('p');
-        const rs = document.getElementsByClassName('r');
-        let resDiv = document.getElementById('res');
-        let warnDiv = document.getElementById('warn');
-        let totalR = 0;
-        let html = "";
+        const high = parseFloat(document.getElementById('high').value) || 0;
+        const low = parseFloat(document.getElementById('low').value) || 0;
+        const steps = parseInt(document.getElementById('steps').value);
+        const isWeighted = document.getElementById('weightMode').checked;
+        const resDiv = document.getElementById('res');
+        
+        if (high <= low) {
+            resDiv.innerHTML = "<p style='color:red; text-align:center; font-size:14px;'>起始點必須大於目標底部</p>";
+            return;
+        }
 
-        for (let i = 0; i < ps.length; i++) {
-            let r = parseFloat(rs[i].value) || 0;
-            let p = ps[i].value || "--";
-            totalR += r;
-            let amt = Math.round(total * (r / 100));
-            html += `<div class="res-item"><span>${p} 點 買進</span><span>$${amt.toLocaleString()}</span></div>`;
+        let html = "";
+        let totalWeightedPrice = 0;
+        const priceInterval = (high - low) / (steps - 1);
+
+        // 計算權重分配
+        let weights = [];
+        let totalWeight = 0;
+        for (let i = 0; i < steps; i++) {
+            // 加權邏輯：線性增加權重。第一組權重1，最後一組權重約3
+            let w = isWeighted ? (1 + (i * (2 / (steps - 1)))) : 1;
+            weights.push(w);
+            totalWeight += w;
+        }
+
+        for (let i = 0; i < steps; i++) {
+            let currentPrice = Math.round(high - (priceInterval * i));
+            let moneyForThisStep = Math.round(total * (weights[i] / totalWeight));
+            totalWeightedPrice += (currentPrice * moneyForThisStep);
+            
+            let percent = Math.round((weights[i] / totalWeight) * 100);
+            
+            html += `
+                <div class="res-item">
+                    <span>${currentPrice.toLocaleString()} <small style="color:#999;font-size:10px;">(${percent}%)</small></span>
+                    <span>$${moneyForThisStep.toLocaleString()}</span>
+                </div>`;
         }
 
         resDiv.innerHTML = html;
-        warnDiv.innerText = totalR !== 100 ? `⚠ 比例總和：${totalR}% (請調整至100%)` : "";
+        const avg = Math.round(totalWeightedPrice / total);
+        document.getElementById('avgPrice').innerHTML = `
+            策略模式：${isWeighted ? '金字塔加權' : '等額均分'}<br>
+            全部成交後平均成本：<b>${avg.toLocaleString()}</b> 點
+        `;
     }
-    // 初始執行一次
-    calc();
+    run();
 </script>
 
 </body>
