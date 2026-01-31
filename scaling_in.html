@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分批進場試算</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F2F0EB; margin: 0; padding: 15px; color: #333; }
+        .container { max-width: 500px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h3 { margin-top: 0; text-align: center; color: #5D5C58; }
+        .input-box { margin-bottom: 20px; }
+        label { display: block; font-size: 14px; margin-bottom: 5px; color: #666; }
+        input { width: 100%; padding: 12px; border: 1px solid #DDD; border-radius: 8px; font-size: 16px; box-sizing: border-box; background: #FAFAFA; }
+        .row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .row div { flex: 1; }
+        .result-area { margin-top: 20px; border-top: 2px solid #F2F0EB; padding-top: 15px; }
+        .res-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #EEE; font-size: 15px; }
+        .res-item span:last-child { font-weight: bold; color: #27ae60; }
+        .warning { color: #e74c3c; font-size: 12px; text-align: center; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h3>分批進場試算</h3>
+        
+        <div class="input-box">
+            <label>總投資金額</label>
+            <input type="number" id="total" value="100000" oninput="calc()">
+        </div>
+
+        <div id="inputs">
+            <div class="row">
+                <div><label>點位</label><input type="number" class="p" value="30000" oninput="calc()"></div>
+                <div><label>比例 %</label><input type="number" class="r" value="20" oninput="calc()"></div>
+            </div>
+            <div class="row">
+                <div><input type="number" class="p" value="28500" oninput="calc()"></div>
+                <div><input type="number" class="r" value="15" oninput="calc()"></div>
+            </div>
+            <div class="row">
+                <div><input type="number" class="p" value="27000" oninput="calc()"></div>
+                <div><input type="number" class="r" value="25" oninput="calc()"></div>
+            </div>
+            <div class="row">
+                <div><input type="number" class="p" value="25500" oninput="calc()"></div>
+                <div><input type="number" class="r" value="15" oninput="calc()"></div>
+            </div>
+            <div class="row">
+                <div><input type="number" class="p" value="24000" oninput="calc()"></div>
+                <div><input type="number" class="r" value="25" oninput="calc()"></div>
+            </div>
+        </div>
+
+        <div id="warn" class="warning"></div>
+
+        <div class="result-area" id="res">
+            </div>
+    </div>
+</div>
+
+<script>
+    function calc() {
+        const total = parseFloat(document.getElementById('total').value) || 0;
+        const ps = document.getElementsByClassName('p');
+        const rs = document.getElementsByClassName('r');
+        let resDiv = document.getElementById('res');
+        let warnDiv = document.getElementById('warn');
+        let totalR = 0;
+        let html = "";
+
+        for (let i = 0; i < ps.length; i++) {
+            let r = parseFloat(rs[i].value) || 0;
+            let p = ps[i].value || "--";
+            totalR += r;
+            let amt = Math.round(total * (r / 100));
+            html += `<div class="res-item"><span>${p} 點 買進</span><span>$${amt.toLocaleString()}</span></div>`;
+        }
+
+        resDiv.innerHTML = html;
+        warnDiv.innerText = totalR !== 100 ? `⚠ 比例總和：${totalR}% (請調整至100%)` : "";
+    }
+    // 初始執行一次
+    calc();
+</script>
+
+</body>
+</html>
