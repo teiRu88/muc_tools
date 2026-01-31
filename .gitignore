@@ -1,0 +1,6 @@
+old_v/
+
+.DS_Store
+.vscode/
+.env
+*.log
