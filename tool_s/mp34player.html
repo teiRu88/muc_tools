@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的播放器</title>
+    <style>
+        body { background: #000; color: #fff; text-align: center; font-family: sans-serif; }
+        .btn { background: #333; padding: 20px; border-radius: 10px; display: inline-block; margin: 20px; cursor: pointer; border: 1px solid #555; }
+        video, audio { width: 95%; margin-top: 20px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="btn" onclick="document.getElementById('picker').click()">
+        📁 點擊選取手機內的影片/音樂
+    </div>
+    <input type="file" id="picker" multiple hidden accept="audio/*,video/*">
+
+    <div id="display">
+        <video id="v" controls playsinline></video>
+        <audio id="a" controls></audio>
+    </div>
+
+    <script>
+        const picker = document.getElementById('picker');
+        picker.onchange = (e) => {
+            const file = e.target.files[0];
+            const url = URL.createObjectURL(file);
+            const v = document.getElementById('v');
+            const a = document.getElementById('a');
+
+            if (file.type.includes('video')) {
+                v.src = url; v.style.display = 'block'; a.style.display = 'none';
+                v.play();
+            } else {
+                a.src = url; a.style.display = 'block'; v.style.display = 'none';
+                a.play();
+            }
+        };
+    </script>
+</body>
+</html>
