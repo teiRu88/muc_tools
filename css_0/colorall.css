@@ -1,3 +1,9 @@
+
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+body{
+      font-family: "DotGothic16", sans-serif;
+}
+
 :root{
     --allbkcolor01: #F2F0EB; /* 暖亞麻色 */
     --btcolor01: rgba(255, 255, 255, 0.4); 
@@ -11,6 +17,7 @@
     --color10: #5B6D5B; 
     --color11: #8C7851; 
     --color12: #2C3333;
+
 
 
 }
