@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>預測決鬥王 v3.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #333; --bg: #F2F0EB; --accent: #ff9500; }
+        body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: var(--bg); color: var(--primary); line-height: 1.6; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .user-info { background: #333; color: white; padding: 12px 20px; border-radius: 50px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+        .bet-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .bet-buttons button { flex: 1; padding: 15px; border-radius: 10px; border: none; color: white; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
+        .bet-buttons button:disabled { background: #ccc !important; cursor: not-allowed; opacity: 0.6; }
+        textarea { width: 100%; height: 80px; border: 1px solid #ddd; border-radius: 10px; padding: 12px; box-sizing: border-box; resize: none; font-size: 16px; margin-top: 10px; }
+        .btn-send { width: 100%; padding: 12px; background: #333; color: white; border: none; border-radius: 10px; margin-top: 10px; cursor: pointer; font-weight: bold; }
+        .post { background: white; padding: 15px; margin-bottom: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .tag { font-size: 11px; padding: 4px 10px; border-radius: 6px; margin-right: 8px; font-weight: bold; color: white; }
+    </style>
+</head>
+<body>
+
+    <h2 style="display:flex; justify-content:space-between;">🔥 預測討論區 <span id="status" style="font-size:12px; color:gray;">● 連線中</span></h2>
+
+    <div class="card user-info">
+        <span>💰 籌碼: <b id="balance">---</b></span>
+        <span>
+            <small id="code-display" style="margin-right:10px;">代碼: ---</small>
+            <button onclick="restoreAccount()" style="background:#555; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer;">找回帳號</button>
+        </span>
+    </div>
+
+    <div class="card" style="background: #fffbe6; border: 1px solid #ffe58f;">
+       <strong style="color: #856404;">🏆 財富排行榜 (Top 5)</strong>
+       <div id="leaderboard" style="margin-top: 10px; font-size: 14px;">
+        載入中...
+       </div>
+    </div>
+
+
+
+
+    <div class="card" style="border:2px solid var(--accent);">
+        <strong>【今日題目】明天台股會收紅盤嗎？</strong>
+        <div class="bet-buttons">
+            <button id="btn-up" onclick="placeBet('看漲')" style="background:#e74c3c">押「漲」 (100)</button>
+            <button id="btn-down" onclick="placeBet('看跌')" style="background:#27ae60">押「跌」 (100)</button>
+        </div>
+        <p id="bet-hint" style="font-size:12px; color:#e74c3c; margin-top:10px; display:none;">⚠️ 本輪您已經投過票囉！</p>
+    </div>
+
+    <div class="card">
+        <textarea id="msg" placeholder="聊聊你的看法..."></textarea>
+        <button class="btn-send" onclick="send()">送出留言</button>
+    </div>
+
+    <div id="board">載入留言中...</div>
+
+<script>
+    const SUPABASE_URL = 'https://bwkwhieercycwlwhuhml.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_t0WbG_SCuMwWMQBDMlsOEg_vtNXV_Fq';
+    const _db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let myProfile = { id: null, balance: 0, has_bet_today: false, last_choice: "", backup_code: "" };
+    let isBusy = false; // 防止重複連點
+
+    async function init() {
+        try {
+            const { data: auth, error: aErr } = await _db.auth.signInAnonymously();
+            if (aErr) throw aErr;
+
+            const savedCode = localStorage.getItem('my_backup_code');
+            let data = null;
+
+            if (savedCode) {
+                const res = await _db.from('ei-players').select('*').eq('backup_code', savedCode).maybeSingle();
+                data = res.data;
+            }
+            if (!data) {
+                const res = await _db.from('ei-players').select('*').eq('id', auth.user.id).maybeSingle();
+                data = res.data;
+            }
+            if (!data) {
+                const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                const { data: newData, error: iErr } = await _db.from('ei-players')
+                    .insert([{ id: auth.user.id, balance: 1000, backup_code: newCode }])
+                    .select().single();
+                if (iErr) throw iErr;
+                data = newData;
+            }
+
+            // 同步資料
+            myProfile.id = data.id;
+            myProfile.balance = data.balance;
+            myProfile.has_bet_today = data.has_bet_today;
+            myProfile.last_choice = data.last_choice;
+            myProfile.backup_code = data.backup_code;
+            localStorage.setItem('my_backup_code', data.backup_code);
+
+            renderUI();
+            loadBoard();
+            updateLeaderboard();
+            document.getElementById('status').innerText = "● 在線";
+            document.getElementById('status').style.color = "green";
+        } catch (err) {
+            document.getElementById('status').innerText = "● 連線失敗: " + err.message;
+        }
+    }
+
+    function renderUI() {
+        document.getElementById('balance').innerText = myProfile.balance;
+        document.getElementById('code-display').innerText = "代碼: " + myProfile.backup_code;
+        
+        // 鎖定按鈕邏輯
+        const upBtn = document.getElementById('btn-up');
+        const downBtn = document.getElementById('btn-down');
+        const hint = document.getElementById('bet-hint');
+
+        if (myProfile.has_bet_today) {
+            upBtn.disabled = true;
+            downBtn.disabled = true;
+            hint.style.display = "block";
+            hint.innerText = `⚠️ 您已押注「${myProfile.last_choice}」，請等待開獎。`;
+        } else {
+            upBtn.disabled = false;
+            downBtn.disabled = false;
+            hint.style.display = "none";
+        }
+    }
+
+
+
+
+
+    async function placeBet(choice) {
+    if (isBusy) return;
+    isBusy = true;
+
+    try {
+        // 直接呼叫資料庫內部的函式，這樣最安全，不會有前端回傳舊數字的問題
+        const { error } = await _db.rpc('place_bet_safe', {
+            player_uuid: myProfile.id,
+            bet_choice: choice
+        });
+
+        if (error) throw error;
+
+        // 下注後「強迫重讀」一次最新的資料庫狀態
+        const { data: latest } = await _db.from('ei-players').select('*').eq('id', myProfile.id).single();
+        
+        myProfile.balance = latest.balance;
+        myProfile.has_bet_today = latest.has_bet_today;
+        myProfile.last_choice = latest.last_choice;
+        
+        renderUI();
+        alert("下注成功！");
+    } catch (err) {
+        console.error(err);
+        alert("下注失敗，可能是籌碼不足或重複下注");
+    } finally {
+        isBusy = false;
+    }
+}
+
+
+
+
+
+    async function send() {
+        const input = document.getElementById('msg');
+        if (!input.value.trim() || isBusy) return;
+        
+        isBusy = true;
+        const { error } = await _db.from('ei-board1').insert([{
+            content: input.value,
+            user_id: myProfile.id,
+            bet_tag: myProfile.has_bet_today ? myProfile.last_choice : ""
+        }]);
+
+        if (!error) {
+            input.value = '';
+            loadBoard();
+        }
+        isBusy = false;
+    }
+
+    async function loadBoard() {
+        const { data } = await _db.from('ei-board1').select('*').order('created_at', { ascending: false }).limit(20);
+        if (!data) return;
+        document.getElementById('board').innerHTML = data.map(p => `
+            <div class="post">
+                ${p.bet_tag ? `<span class="tag ${p.bet_tag==='看漲'?'tag-up':'tag-down'}" style="background:${p.bet_tag==='看漲'?'#e74c3c':'#27ae60'}">${p.bet_tag}</span>` : ''}
+                ${p.content}
+                <small style="display:block; color:#999; margin-top:8px;">${new Date(p.created_at).toLocaleString()}</small>
+            </div>
+        `).join('');
+         updateLeaderboard();
+    }
+
+    async function restoreAccount() {
+        const code = prompt("輸入 6 位引繼碼：");
+        if (!code) return;
+        const { data } = await _db.from('ei-players').select('*').eq('backup_code', code.toUpperCase()).maybeSingle();
+        if (data && confirm(`找到帳號，餘額 ${data.balance}，確定切換？`)) {
+            localStorage.setItem('my_backup_code', data.backup_code);
+            location.reload();
+        } else {
+            alert("找不到該帳號");
+        }
+    }
+
+    init();
+
+async function updateLeaderboard() {
+    try {
+        // 從 ei-players 抓取餘額最高的前 5 名
+        const { data, error } = await _db
+            .from('ei-players')
+            .select('balance, backup_code')
+            .order('balance', { ascending: false })
+            .limit(5);
+
+        if (error) throw error;
+
+        const listEl = document.getElementById('leaderboard');
+        if (data.length === 0) {
+            listEl.innerHTML = "目前尚無資料";
+            return;
+        }
+
+        // 渲染排行榜，並將代碼遮罩處理 (例如 ABCDEF -> ABC***)
+        listEl.innerHTML = data.map((user, index) => {
+            const medal = ['🥇', '🥈', '🥉', '4.', '5.'][index];
+            const maskedCode = user.backup_code ? user.backup_code.substring(0, 3) + "***" : "匿名玩家";
+            return `
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eee;">
+                    <span>${medal} 玩家 ${maskedCode}</span>
+                    <strong style="color: #d48806;">$${user.balance}</strong>
+                </div>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error("排行榜更新失敗:", err);
+    }
+}
+
+
+</script>
+</body>
+</html>
