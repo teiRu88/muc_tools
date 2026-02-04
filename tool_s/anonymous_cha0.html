@@ -1,40 +1,169 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>匿名看板</title>
+    <title>金融預測王 v2.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #333; --bg: #F2F0EB; }
-        body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: var(--bg); color: var(--primary); }
-        h2 { display: flex; justify-content: space-between; align-items: center; }
-        
-        /* 留言框 */
-        .input-group { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        textarea { width: 100%; height: 80px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box; resize: none; font-size: 16px; transition: border 0.3s; }
-        textarea:focus { outline: none; border-color: #007AFF; }
-        
-        /* 按鈕特效 */
-        button { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; margin-top: 10px; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        button:hover:not(:disabled) { opacity: 0.8; transform: translateY(-1px); }
+        :root {
+            --primary: #333;
+            --bg: #F2F0EB;
+            --accent: #ff9500;
+        }
 
-        /* 討論串內容 */
-        .post { background: white; padding: 15px; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); animation: fadeIn 0.5s ease; position: relative; overflow: hidden; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .post small { display: block; margin-top: 8px; color: #999; font-size: 12px; }
-        #status { font-size: 14px; color: #666; }
+        body {
+            font-family: -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: var(--bg);
+            color: var(--primary);
+        }
+
+        h2 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .user-info {
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bet-zone {
+            border: 2px solid var(--accent);
+        }
+
+        .bet-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .bet-buttons button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .bet-buttons button:active {
+            transform: scale(0.95);
+        }
+
+        textarea {
+            width: 100%;
+            height: 70px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            box-sizing: border-box;
+            resize: none;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .btn-send {
+            width: 100%;
+            padding: 12px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #board {
+            margin-top: 20px;
+        }
+
+        .post {
+            background: white;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .tag {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-right: 8px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .tag-up {
+            background: #e74c3c;
+        }
+
+        .tag-down {
+            background: #27ae60;
+        }
+
+        .btn-restore {
+            background: #555;
+            border: none;
+            color: #ccc;
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-restore:hover {
+            color: white;
+        }
     </style>
 </head>
+
 <body>
 
-    <h2>匿名看板 <span id="status">● 連線中</span></h2>
+    <h2>🔥 預測討論區 <span id="status" style="font-size:12px; color: gray;">● 連線中</span></h2>
 
-    <div class="input-group">
-        <textarea id="msg" placeholder="在想什麼..."></textarea>
-        <button id="sendBtn" onclick="send()">送出留言</button>
+    <div class="card user-info">
+        <span>💰 籌碼: <b id="balance">---</b></span>
+        <span>
+            <small id="code-display" style="margin-right:10px;">代碼: ---</small>
+            <button class="btn-restore" onclick="restoreAccount()">找回帳號</button>
+        </span>
+    </div>
+
+    <div class="card bet-zone">
+        <strong>今日題目：黃金價格今晚會漲破 $2700 嗎？</strong>
+        <div class="bet-buttons">
+            <button onclick="placeBet('看漲')" style="background:#e74c3c">押「漲」 (100)</button>
+            <button onclick="placeBet('看跌')" style="background:#27ae60">押「跌」 (100)</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <textarea id="msg" placeholder="說點什麼... (下注後發文會自動帶標籤)"></textarea>
+        <button class="btn-send" onclick="send()">送出留言</button>
     </div>
 
     <div id="board">載入中...</div>
@@ -45,87 +174,195 @@
         const SUPABASE_KEY = 'sb_publishable_t0WbG_SCuMwWMQBDMlsOEg_vtNXV_Fq';
         const _db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let lastPostContent = ""; // 防重複發文用
+        // 全域變數
+        let myProfile = { id: null, balance: 0, lastBet: "", backup_code: "" };
 
-        // --- 載入留言 ---
-        async function load() {
+        // --- 2. 初始化功能 ---
+        async function init() {
             const statusEl = document.getElementById('status');
             try {
-                const { data, error } = await _db.from('Duelist').select('*').order('created_at', { ascending: false }).limit(50);
-                if (error) throw error;
+                // A. 匿名登入
+                const { data: auth, error: aErr } = await _db.auth.signInAnonymously();
+                if (aErr) throw aErr;
 
-                const board = document.getElementById('board');
-                if (data.length === 0) {
-                    board.innerHTML = '<div style="text-align:center; color:#999;">目前還沒有留言，快來搶頭香！</div>';
-                } else {
-                    board.innerHTML = data.map(p => `
-                        <div class="post">
-                            ${escapeHTML(p.content)}
-                            <small>${new Date(p.created_at).toLocaleString()}</small>
-                        </div>
-                    `).join('');
+                // B. 優先從本地記憶讀取代碼
+                const savedCode = localStorage.getItem('my_backup_code');
+                let data = null;
+
+                if (savedCode) {
+                    const { data: oldData } = await _db.from('ei-players').select('*').eq('backup_code', savedCode).maybeSingle();
+                    data = oldData;
                 }
+
+                // C. 若無代碼或代碼失效，用 Auth ID 找
+                if (!data) {
+                    const { data: authData } = await _db.from('ei-players').select('*').eq('id', auth.user.id).maybeSingle();
+                    data = authData;
+                }
+
+                // D. 真的是新玩家，則建立新資料
+                if (!data) {
+                    const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    const { data: newData, error: iErr } = await _db.from('ei-players')
+                        .insert([{ id: auth.user.id, balance: 1000, backup_code: newCode }])
+                        .select().single();
+                    if (iErr) throw iErr;
+                    data = newData;
+                }
+
+                // E. 同步到全域與 UI
+                myProfile.id = data.id;
+                myProfile.balance = data.balance;
+                myProfile.backup_code = data.backup_code;
+                localStorage.setItem('my_backup_code', data.backup_code);
+
+                renderUI();
+                loadBoard();
+
                 statusEl.innerText = "● 在線";
                 statusEl.style.color = "green";
             } catch (err) {
+                console.error("Init Error:", err);
                 statusEl.innerText = "● 連線失敗";
                 statusEl.style.color = "red";
-                console.error(err);
             }
         }
 
-        // --- 發送留言 ---
-        async function send() {
-            const btn = document.getElementById('sendBtn');
-            const input = document.getElementById('msg');
-            const content = input.value.trim();
+        // --- 3. 功能函式 ---
 
-            // 基本驗證
-            if (!content) return alert("內容不能是空的喔！");
-            if (content === lastPostContent) return alert("這句話剛剛說過了...");
-            if (content.length > 500) return alert("內容太長了，請縮減至 500 字以內。");
+        function renderUI() {
+            document.getElementById('balance').innerText = myProfile.balance;
+            document.getElementById('code-display').innerText = "代碼: " + myProfile.backup_code;
+        }
 
-            // 開始冷卻機制 (Rate Limiting 前端模擬)
-            btn.disabled = true;
-            btn.innerText = "傳送中...";
+        // 如果今天下注過，就把按鈕變灰，防止誤按
+        const buttons = document.querySelectorAll('.bet-buttons button');
+        if (myProfile.lastBet || myProfile.has_bet_today) {
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = "0.5";
+                btn.style.cursor = "not-allowed";
+            });
+        } else {
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+            });
+        }
+}
+
+
+        async function placeBet(choice) {
+            // A. 立即阻斷連點 (防止按鈕重複觸發)
+            if (this.isLoading) return;
+            this.isLoading = true;
 
             try {
-                const { error } = await _db.from('Duelist').insert([{ content }]);
-                if (error) throw error;
+                // B. 重新從資料庫檢查最新狀態 (最保險)
+                const { data: user, error: checkError } = await _db
+                    .from('ei-players')
+                    .select('balance, has_bet_today')
+                    .eq('id', myProfile.id)
+                    .single();
 
-                lastPostContent = content; // 紀錄最後一次發文
-                input.value = '';
-                await load(); // 重新載入
+                if (checkError) throw new Error("讀取狀態失敗");
 
-                // 強制冷卻 3 秒，防止連點消耗流量
-                let cooldown = 3;
-                const timer = setInterval(() => {
-                    cooldown--;
-                    if (cooldown <= 0) {
-                        clearInterval(timer);
-                        btn.disabled = false;
-                        btn.innerText = "送出留言";
-                    } else {
-                        btn.innerText = `等待 (${cooldown}s)`;
-                    }
-                }, 1000);
+                if (user.has_bet_today) {
+                    alert("你這輪已經投過票囉！請等下一題。");
+                    return;
+                }
 
+                if (user.balance < 100) {
+                    alert("籌碼不足！");
+                    return;
+                }
+
+                // C. 執行扣款與鎖定 (這筆錢是根據當下的餘額去扣)
+                const newBalance = user.balance - 100;
+                const { error: updError } = await _db.from('ei-players')
+                    .update({
+                        balance: newBalance,
+                        has_bet_today: true,
+                        last_choice: choice
+                    })
+                    .eq('id', myProfile.id);
+
+                if (updError) throw updError;
+
+                // D. 更新成功後同步本地變數
+                myProfile.balance = newBalance;
+                myProfile.lastBet = choice;
+                renderUI();
+
+                alert(`下注成功：${choice}！`);
             } catch (err) {
-                alert("發送失敗：" + err.message);
-                btn.disabled = false;
-                btn.innerText = "送出留言";
+                console.error(err);
+                alert("操作失敗: " + err.message);
+            } finally {
+                this.isLoading = false; // 解除阻斷
             }
         }
 
-        // XSS 防護：防止別人在留言裡寫script
+
+
+        async function send() {
+            const input = document.getElementById('msg');
+            const content = input.value.trim();
+            if (!content) return;
+
+            const { error } = await _db.from('ei-board1').insert([{
+                content: content,
+                user_id: myProfile.id,
+                bet_tag: myProfile.lastBet
+            }]);
+
+            if (!error) {
+                input.value = '';
+                myProfile.lastBet = ''; // 發完清空本次下注狀態
+                loadBoard();
+            } else {
+                alert("發送失敗");
+            }
+        }
+
+        async function loadBoard() {
+            const { data, error } = await _db.from('ei-board1').select('*').order('created_at', { ascending: false }).limit(20);
+            if (error) return;
+
+            const board = document.getElementById('board');
+            board.innerHTML = data.map(p => `
+            <div class="post">
+                ${p.bet_tag ? `<span class="tag ${p.bet_tag === '看漲' ? 'tag-up' : 'tag-down'}">${p.bet_tag}</span>` : ''}
+                ${escapeHTML(p.content)}
+                <small style="display:block; color:#999; margin-top:8px;">${new Date(p.created_at).toLocaleString()}</small>
+            </div>
+        `).join('');
+        }
+
+        async function restoreAccount() {
+            const code = prompt("請輸入您的 6 位引繼碼：");
+            if (!code) return;
+
+            const { data, error } = await _db.from('ei-players').select('*').eq('backup_code', code.toUpperCase()).maybeSingle();
+
+            if (error || !data) return alert("找不到此代碼！");
+
+            if (confirm(`找到帳號！餘額：${data.balance}。確定切換？`)) {
+                localStorage.setItem('my_backup_code', data.backup_code);
+                location.reload();
+            }
+        }
+
         function escapeHTML(str) {
             const p = document.createElement('p');
             p.textContent = str;
             return p.innerHTML;
         }
 
-        // 初始化
-        load();
+        // 啟動
+        init();
     </script>
 </body>
+
 </html>
