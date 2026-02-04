@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>匿名看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #333; --bg: #F2F0EB; }
+        body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: var(--bg); color: var(--primary); }
+        h2 { display: flex; justify-content: space-between; align-items: center; }
+        
+        /* 留言框 */
+        .input-group { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        textarea { width: 100%; height: 80px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box; resize: none; font-size: 16px; transition: border 0.3s; }
+        textarea:focus { outline: none; border-color: #007AFF; }
+        
+        /* 按鈕特效 */
+        button { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; margin-top: 10px; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        button:hover:not(:disabled) { opacity: 0.8; transform: translateY(-1px); }
+
+        /* 討論串內容 */
+        .post { background: white; padding: 15px; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); animation: fadeIn 0.5s ease; position: relative; overflow: hidden; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .post small { display: block; margin-top: 8px; color: #999; font-size: 12px; }
+        #status { font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+
+    <h2>匿名看板 <span id="status">● 連線中</span></h2>
+
+    <div class="input-group">
+        <textarea id="msg" placeholder="在想什麼..."></textarea>
+        <button id="sendBtn" onclick="send()">送出留言</button>
+    </div>
+
+    <div id="board">載入中...</div>
+
+    <script>
+        // --- 設定區 ---
+        const SUPABASE_URL = 'https://bwkwhieercycwlwhuhml.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_t0WbG_SCuMwWMQBDMlsOEg_vtNXV_Fq';
+        const _db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let lastPostContent = ""; // 防重複發文用
+
+        // --- 載入留言 ---
+        async function load() {
+            const statusEl = document.getElementById('status');
+            try {
+                const { data, error } = await _db.from('Duelist').select('*').order('created_at', { ascending: false }).limit(50);
+                if (error) throw error;
+
+                const board = document.getElementById('board');
+                if (data.length === 0) {
+                    board.innerHTML = '<div style="text-align:center; color:#999;">目前還沒有留言，快來搶頭香！</div>';
+                } else {
+                    board.innerHTML = data.map(p => `
+                        <div class="post">
+                            ${escapeHTML(p.content)}
+                            <small>${new Date(p.created_at).toLocaleString()}</small>
+                        </div>
+                    `).join('');
+                }
+                statusEl.innerText = "● 在線";
+                statusEl.style.color = "green";
+            } catch (err) {
+                statusEl.innerText = "● 連線失敗";
+                statusEl.style.color = "red";
+                console.error(err);
+            }
+        }
+
+        // --- 發送留言 ---
+        async function send() {
+            const btn = document.getElementById('sendBtn');
+            const input = document.getElementById('msg');
+            const content = input.value.trim();
+
+            // 基本驗證
+            if (!content) return alert("內容不能是空的喔！");
+            if (content === lastPostContent) return alert("這句話剛剛說過了...");
+            if (content.length > 500) return alert("內容太長了，請縮減至 500 字以內。");
+
+            // 開始冷卻機制 (Rate Limiting 前端模擬)
+            btn.disabled = true;
+            btn.innerText = "傳送中...";
+
+            try {
+                const { error } = await _db.from('Duelist').insert([{ content }]);
+                if (error) throw error;
+
+                lastPostContent = content; // 紀錄最後一次發文
+                input.value = '';
+                await load(); // 重新載入
+
+                // 強制冷卻 3 秒，防止連點消耗流量
+                let cooldown = 3;
+                const timer = setInterval(() => {
+                    cooldown--;
+                    if (cooldown <= 0) {
+                        clearInterval(timer);
+                        btn.disabled = false;
+                        btn.innerText = "送出留言";
+                    } else {
+                        btn.innerText = `等待 (${cooldown}s)`;
+                    }
+                }, 1000);
+
+            } catch (err) {
+                alert("發送失敗：" + err.message);
+                btn.disabled = false;
+                btn.innerText = "送出留言";
+            }
+        }
+
+        // XSS 防護：防止別人在留言裡寫script
+        function escapeHTML(str) {
+            const p = document.createElement('p');
+            p.textContent = str;
+            return p.innerHTML;
+        }
+
+        // 初始化
+        load();
+    </script>
+</body>
+</html>
