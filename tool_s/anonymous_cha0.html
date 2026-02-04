@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>匿名看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 500px; margin: 20px auto; padding: 20px; background: #f4f4f4; }
+        .post { background: white; padding: 10px; margin-bottom: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        textarea { width: 100%; height: 60px; margin-bottom: 10px; }
+        button { background: #333; color: white; border: none; padding: 10px 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>匿名討論版</h2>
+    <textarea id="msg" placeholder="想說什麼？"></textarea>
+    <button onclick="send()">送出</button>
+    <hr>
+    <div id="board">載入中...</div>
+
+<script>
+    const SUPABASE_URL = 'https://bwkwhieercycwlwhuhml.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_t0WbG_SCuMwWMQBDMlsOEg_vtNXV_Fq'; 
+    
+    const _db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function load() {
+        try {
+            const { data, error } = await _db.from('Duelist').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            document.getElementById('board').innerHTML = data.map(p => 
+                `<div class="post">${p.content}<br><small style="color:gray">${new Date(p.created_at).toLocaleString()}</small></div>`
+            ).join('');
+        } catch (err) {
+            console.error('讀取失敗:', err.message);
+            document.getElementById('board').innerText = '載入失敗: ' + err.message;
+        }
+    }
+
+    async function send() {
+        const content = document.getElementById('msg').value;
+        if(!content) return;
+        try {
+            const { error } = await _db.from('Duelist').insert([{ content }]);
+            if (error) throw error;
+            document.getElementById('msg').value = '';
+            load();
+        } catch (err) {
+            console.error('送出失敗:', err.message);
+            alert('送出失敗，請檢查 RLS 設定！');
+        }
+    }
+
+    load();
+</script>
+</body>
+</html>
