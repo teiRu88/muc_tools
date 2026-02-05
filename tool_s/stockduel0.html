@@ -43,6 +43,16 @@
 
     <div class="card" style="border:2px solid var(--accent);">
         <strong>【今日題目】明天台股會收紅盤嗎？</strong>
+
+<div style="margin-bottom: 15px;">
+    <label style="font-size: 14px; color: #666;">💰 投入籌碼金額：</label>
+    <input type="number" id="bet-amount" value="100" min="10" step="10" 
+           style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px;">
+</div>
+
+
+
+
         <div class="bet-buttons">
             <button id="btn-up" onclick="placeBet('看漲')" style="background:#e74c3c">押「漲」 (100)</button>
             <button id="btn-down" onclick="placeBet('看跌')" style="background:#27ae60">押「跌」 (100)</button>
@@ -133,31 +143,44 @@
 
 
 
-    async function placeBet(choice) {
+async function placeBet(choice) {
     if (isBusy) return;
-    isBusy = true;
 
+    // 1. 根據你的 HTML ID 抓取數值
+    const amountInput = document.getElementById('bet-amount');
+    const amt = parseInt(amountInput.value); 
+
+    // 驗證金額
+    if (isNaN(amt) || amt <= 0) {
+        alert("請輸入有效的金額");
+        return;
+    }
+    if (amt > myProfile.balance) {
+        alert("籌碼不足！您目前的餘額為: " + myProfile.balance);
+        return;
+    }
+
+    isBusy = true;
     try {
-        // 直接呼叫資料庫內部的函式，這樣最安全，不會有前端回傳舊數字的問題
+        // 2. 呼叫 RPC，務必確認參數名稱 input_bet_amount
         const { error } = await _db.rpc('place_bet_safe', {
             player_uuid: myProfile.id,
-            bet_choice: choice
+            bet_choice: choice,
+            input_bet_amount: amt 
         });
 
         if (error) throw error;
 
-        // 下注後「強迫重讀」一次最新的資料庫狀態
-        const { data: latest } = await _db.from('ei-players').select('*').eq('id', myProfile.id).single();
-        
-        myProfile.balance = latest.balance;
-        myProfile.has_bet_today = latest.has_bet_today;
-        myProfile.last_choice = latest.last_choice;
+        // 3. 成功後，手動更新前端顯示，避免等待資料庫回傳的時間差
+        myProfile.balance -= amt;
+        myProfile.has_bet_today = true;
+        myProfile.last_choice = choice;
         
         renderUI();
-        alert("下注成功！");
+        alert(`成功押注「${choice}」！投入籌碼：${amt}`);
+
     } catch (err) {
-        console.error(err);
-        alert("下注失敗，可能是籌碼不足或重複下注");
+        alert("下注失敗：" + err.message);
     } finally {
         isBusy = false;
     }
@@ -167,23 +190,32 @@
 
 
 
-    async function send() {
-        const input = document.getElementById('msg');
-        if (!input.value.trim() || isBusy) return;
-        
-        isBusy = true;
-        const { error } = await _db.from('ei-board1').insert([{
-            content: input.value,
-            user_id: myProfile.id,
-            bet_tag: myProfile.has_bet_today ? myProfile.last_choice : ""
-        }]);
 
-        if (!error) {
-            input.value = '';
-            loadBoard();
-        }
-        isBusy = false;
+async function send() {
+    const input = document.getElementById('msg');
+    if (!input.value.trim() || isBusy) return;
+    
+    isBusy = true;
+    const { error } = await _db.from('ei-board1').insert([{
+        content: input.value,
+        user_id: myProfile.id, // 這裡必須與 auth.uid() 一致
+        bet_tag: myProfile.has_bet_today ? myProfile.last_choice : ""
+    }]);
+
+    if (error) {
+        console.error("發言失敗:", error.message);
+        alert("發言失敗，請檢查權限");
+    } else {
+        input.value = '';
+        loadBoard();
     }
+    isBusy = false;
+}
+
+
+
+
+
 
     async function loadBoard() {
         const { data } = await _db.from('ei-board1').select('*').order('created_at', { ascending: false }).limit(20);
