@@ -211,7 +211,7 @@
 
     function exportJSON() {
         const blob = new Blob([JSON.stringify(products, null, 2)], { type: "application/json" });
-        const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `價格紀錄V10.json` });
+        const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `價格紀錄.json` });
         a.click();
     }
 
