@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>記帳本 v3.17</title>
+    <style>
+        :root { 
+            --primary-color: #5D737E; /* 主色調 */
+            --bg-color: #F2F0EB;      /* 背景色 */
+            --accent-color: #A63D40;  /* 金額 */
+            --warning-color: #CF995F; /* 篩選與警示 */
+            --text-main: #3E3E3E;     /* 文字主色 */
+            --text-sub: #8C8C8C;      /* 副標題與日期 */
+            --card-bg: #FFFFFF;       /* 卡片背景 */
+        }
+        body { font-family: sans-serif; background-color: var(--bg-color); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; padding-bottom: 50px; color: var(--text-main); }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 450px; box-sizing: border-box; margin-bottom: 15px; }
+        h2 { text-align: center; margin-top: 0; color: var(--text-main); letter-spacing: 1px; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 5px; color: var(--text-sub); font-size: 14px; }
+        
+        input { 
+            width: 100%; padding: 12px; border: 1px solid #E0DED7; border-radius: 8px; font-size: 16px; 
+            box-sizing: border-box; -webkit-appearance: none; appearance: none; background-color: white;
+            color: var(--text-main);
+        }
+        input:focus { outline: none; border-color: var(--primary-color); }
+        
+        .category-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
+        .cat-btn { padding: 12px; border: 1px solid #E0DED7; background: #fff; border-radius: 8px; text-align: center; font-size: 15px; cursor: pointer; font-weight: 500; color: var(--text-main); transition: 0.2s; }
+        .cat-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+
+        .submit-btn { width: 100%; padding: 15px; background-color: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; margin-top: 10px; box-shadow: 0 4px 6px rgba(93, 115, 126, 0.2); }
+
+        .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; width: 100%; max-width: 450px; }
+        .summary-item { background: #fff; padding: 10px; border-radius: 10px; border-left: 4px solid var(--primary-color); box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+        .summary-label { font-size: 12px; color: var(--text-sub); }
+        .summary-value { font-size: 16px; font-weight: bold; color: var(--text-main); display: block; margin-top: 4px; }
+
+        .backup-zone { display: flex; gap: 10px; margin-top: 10px; width: 100%; }
+        .backup-btn { flex: 1; padding: 10px; font-size: 13px; background: #EBE9E4; border: 1px solid #D1CFC9; border-radius: 8px; cursor: pointer; color: #777; }
+
+        .history-section { width: 100%; max-width: 450px; margin-top: 15px; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        
+        .search-bar { margin-bottom: 12px; }
+        .search-bar input { padding: 8px 12px; font-size: 14px; border-color: #D1CFC9; background: #fff; }
+
+        .filter-toggle { 
+            font-size: 12px; padding: 5px 10px; border-radius: 20px; border: 1px solid #D1CFC9; 
+            background: #fff; cursor: pointer; transition: 0.3s; color: var(--text-sub);
+        }
+        .filter-toggle.active { background: var(--warning-color); color: white; border-color: var(--warning-color); }
+
+        .history-item { background: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .item-info .date { font-size: 11px; color: var(--text-sub); }
+        .item-info .cat { font-weight: bold; color: var(--text-main); font-size: 14px; }
+        .item-info .note { font-size: 13px; color: #777; }
+        .item-amount { font-size: 16px; font-weight: bold; color: var(--accent-color); }
+        .delete-btn { color: #E0DED7; border: none; background: none; font-size: 20px; margin-left: 10px; padding: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>記帳本</h2>
+    
+    <div class="input-group">
+        <label>日期</label>
+        <input type="date" id="date">
+    </div>
+
+    <div class="input-group">
+        <label>選擇分類</label>
+        <div class="category-grid">
+            <div class="cat-btn" onclick="selectCat('餐費')">餐費</div>
+            <div class="cat-btn" onclick="selectCat('其他')">其他</div>
+            <div class="cat-btn" onclick="selectCat('必要支出')">必要支出</div>
+            <div class="cat-btn" onclick="selectCat('非必要花費')">非必要花費</div>
+        </div>
+        <input type="hidden" id="category" value="餐費">
+    </div>
+
+    <div class="input-group">
+        <label>金額</label>
+        <input type="number" id="amount" inputmode="decimal" placeholder="輸入金額">
+    </div>
+
+    <div class="input-group">
+        <label>備註</label>
+        <input type="text" id="note" placeholder="備註細項...">
+    </div>
+
+    <button class="submit-btn" onclick="saveData()">新增紀錄</button>
+
+    <div class="backup-zone">
+        <button class="backup-btn" onclick="exportData()">匯出備份</button>
+        <button class="backup-btn" onclick="document.getElementById('importFile').click()">匯入備份</button>
+        <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+    </div>
+</div>
+
+<div class="summary-grid" id="summaryArea">
+    <div class="summary-item"><span class="summary-label">餐費</span><span class="summary-value" id="sum-餐費">$0</span></div>
+    <div class="summary-item" style="border-left-color: #8E9AAF;"><span class="summary-label">其他</span><span class="summary-value" id="sum-其他">$0</span></div>
+    <div class="summary-item" style="border-left-color: #768970;"><span class="summary-label">必要支出</span><span class="summary-value" id="sum-必要支出">$0</span></div>
+    <div class="summary-item" style="border-left-color: #CF995F;"><span class="summary-label">非必要花費</span><span class="summary-value" id="sum-非必要花費">$0</span></div>
+</div>
+
+<div class="history-section">
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="🔍 搜尋日期或備註..." oninput="renderList()">
+    </div>
+
+    <div class="history-header">
+        <h3 style="color:var(--text-main); font-size: 16px; margin:0;">最近紀錄</h3>
+        <button id="filterBtn" class="filter-toggle" onclick="toggleFilter()">🔍 僅看非必要花費</button>
+    </div>
+    <div id="historyList"></div>
+</div>
+
+<script>
+    let records = JSON.parse(localStorage.getItem('myRecords')) || [];
+    const categories = ['餐費', '其他', '必要支出', '非必要花費'];
+    let isFiltered = false;
+
+    document.getElementById('date').valueAsDate = new Date();
+    selectCat('餐費');
+    renderList();
+
+    function selectCat(cat) {
+        document.getElementById('category').value = cat;
+        document.querySelectorAll('.cat-btn').forEach(b => {
+            b.classList.toggle('active', b.innerText === cat);
+        });
+    }
+
+    function toggleFilter() {
+        isFiltered = !isFiltered;
+        const btn = document.getElementById('filterBtn');
+        btn.innerText = isFiltered ? "顯示全部" : "🔍 僅看非必要花費";
+        btn.classList.toggle('active', isFiltered);
+        renderList();
+    }
+
+    function saveData() {
+        const date = document.getElementById('date').value;
+        const category = document.getElementById('category').value;
+        const amount = parseFloat(document.getElementById('amount').value);
+        const note = document.getElementById('note').value;
+
+        if (isNaN(amount) || amount <= 0) { alert('請輸入金額！'); return; }
+
+        records.unshift({ id: Date.now(), date, category, amount, note });
+        updateStorage();
+        document.getElementById('amount').value = '';
+        document.getElementById('note').value = '';
+    }
+
+    function deleteRecord(id) {
+        if(confirm('確定刪除？')) {
+            records = records.filter(r => r.id !== id);
+            updateStorage();
+        }
+    }
+
+    function updateStorage() {
+        localStorage.setItem('myRecords', JSON.stringify(records));
+        renderList();
+    }
+
+    function exportData() {
+        if (records.length === 0) { alert('目前沒有資料可以匯出'); return; }
+        const dataStr = JSON.stringify(records, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `記帳備份_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (confirm(`確定匯入 ${imported.length} 筆資料嗎？`)) {
+                    records = imported;
+                    updateStorage();
+                }
+            } catch (err) { alert('檔案格式錯誤！'); }
+        };
+        reader.readAsText(file);
+    }
+
+    function renderList() {
+        const listDiv = document.getElementById('historyList');
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        listDiv.innerHTML = '';
+
+        const displayRecords = records.filter(r => {
+            const matchesFilter = isFiltered ? r.category === '非必要花費' : true;
+            const matchesSearch = (r.date.includes(searchTerm)) || (r.note && r.note.toLowerCase().includes(searchTerm));
+            return matchesFilter && matchesSearch;
+        });
+
+        const currentTotals = { '餐費': 0, '必要支出': 0, '非必要花費': 0, '其他': 0 };
+
+        if (displayRecords.length === 0) {
+            listDiv.innerHTML = '<p style="text-align:center; color:#999; font-size:14px; margin-top:20px;">找不到符合的紀錄</p>';
+        }
+
+        displayRecords.forEach(r => {
+            if (currentTotals.hasOwnProperty(r.category)) {
+                currentTotals[r.category] += parseFloat(r.amount);
+            }
+
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <div class="item-info">
+                    <div class="date">${r.date}</div>
+                    <div class="cat">${r.category}</div>
+                    <div class="note">${r.note || ''}</div>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <span class="item-amount">$${parseFloat(r.amount).toLocaleString()}</span>
+                    <button class="delete-btn" onclick="deleteRecord(${r.id})">×</button>
+                </div>`;
+            listDiv.appendChild(item);
+        });
+
+        categories.forEach(cat => {
+            document.getElementById(`sum-${cat}`).innerText = `$${currentTotals[cat].toLocaleString()}`;
+        });
+    }
+</script>
+
+</body>
+</html>
