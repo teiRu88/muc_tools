@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>物價筆記本</title>
+    <style>
+        /* 保持之前的優良設計 */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --primary-color: #5D737E;
+            --bg-color: #F2F0EB;
+            --accent-color: #A63D40;
+            --low-price-color: #27AE60;
+            --text-main: #3E3E3E;
+            --text-sub: #8C8C8C;
+            --card-bg: #FFFFFF;
+        }
+
+        body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 450px; }
+
+        .input-card { background: var(--card-bg); padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; position: relative; }
+        .form-row { display: flex; gap: 8px; margin-bottom: 10px; }
+        .form-group { flex: 1; min-width: 0; position: relative; }
+        label { display: block; font-size: 0.75rem; color: var(--text-sub); margin-bottom: 4px; }
+        select, input { width: 100%; padding: 12px; border: 1px solid #CCC; border-radius: 6px; font-size: 1rem; }
+        
+        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #DDD; z-index: 1000; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 0 0 8px 8px; }
+        .autocomplete-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #F0F0F0; }
+
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .btn-add { background-color: var(--primary-color); color: white; margin-top: 5px; }
+        
+        .storage-tools { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-tool { background-color: #E0E0E0; font-size: 0.8rem; padding: 8px; flex: 1; color: var(--text-main); }
+
+        .search-box { margin-bottom: 15px; }
+        .search-box input { border: 2px solid var(--primary-color); border-radius: 25px; padding-left: 15px; }
+
+        /* 卡片與列表 */
+        .item-card { background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 12px; border-top: 4px solid var(--primary-color); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .item-name { font-weight: bold; font-size: 1.2rem; }
+        .btn-rename { font-size: 0.7rem; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 2px 6px; border-radius: 4px; cursor: pointer; background: none; width: auto; font-weight: normal; }
+
+        .all-time-low { display: inline-block; background: #E8F5E9; color: var(--low-price-color); padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; margin-bottom: 10px; }
+        
+        .history-list { border-top: 1px solid #EEE; padding-top: 10px; }
+        .history-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #F0F0F0; }
+        .history-row:last-child { border-bottom: none; }
+        
+        .history-info { flex: 1; }
+        .history-meta { color: var(--text-sub); font-size: 0.75rem; margin-bottom: 2px; }
+        .store-label { background: #EEE; padding: 1px 4px; border-radius: 3px; margin-right: 4px; color: var(--text-main); }
+        .note-text { color: var(--accent-color); font-size: 0.75rem; font-style: italic; }
+        
+        .history-price-actions { text-align: right; min-width: 100px; }
+        .history-price { font-weight: bold; font-size: 1rem; margin-bottom: 4px; }
+        .low-badge { color: white; background: var(--low-price-color); padding: 1px 4px; border-radius: 3px; font-size: 0.65rem; margin-left: 5px; }
+
+        .action-links { font-size: 0.7rem; color: #0066CC; text-decoration: underline; cursor: pointer; }
+        .btn-del-link { color: #999; margin-left: 8px; }
+
+        .btn-del-item { background: none; border: none; color: #DDD; font-size: 0.75rem; cursor: pointer; text-align: right; width: auto; padding: 0; margin-top: 15px; display: block; margin-left: auto; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h3 style="text-align:center;">📦 物價筆記本v0.9 </h3>
+
+    <div class="input-card">
+        <div class="form-row">
+            <div class="form-group"><label>地點</label><select id="store"><option>全聯</option><option>家樂福</option><option>全家</option><option>7-11</option><option>其他</option></select></div>
+            <div class="form-group"><label>物品名稱</label><input type="text" id="itemName" placeholder="義美經典原味奶茶18g18包" autocomplete="off" oninput="showSuggestions(this.value)"><div id="suggestionList" class="autocomplete-list" style="display:none;"></div></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>單價</label><input type="number" id="price" inputmode="decimal"></div>
+            <div class="form-group"><label>備註</label><input type="text" id="note" placeholder="買二送一、其他通路"></div>
+        </div>
+        <button class="btn-add" onclick="addItem()">⚡ 記錄價格</button>
+        <div class="storage-tools">
+            <button class="btn-tool" onclick="exportJSON()">📤 備份</button>
+            <button class="btn-tool" onclick="document.getElementById('importFile').click()">📥 匯入</button>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importJSON(event)">
+        </div>
+    </div>
+
+    <div class="search-box"><input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋商品..."></div>
+    <div id="itemList"></div>
+</div>
+
+<script>
+    let products = JSON.parse(localStorage.getItem('price_master_v10')) || [];
+    renderList();
+
+    // 修改品名
+    function renameProduct(id) {
+        let prod = products.find(p => p.id === id);
+        const newName = prompt(`將「${prod.name}」修改為新的品名:`, prod.name);
+        if (newName && newName.trim() !== "" && newName !== prod.name) {
+            // 檢查是否已有相同名稱的商品
+            const duplicate = products.find(p => p.name === newName.trim());
+            if (duplicate) {
+                if (confirm(`已有「${newName.trim()}」的紀錄，是否將兩者合併？`)) {
+                    duplicate.history = [...duplicate.history, ...prod.history];
+                    products = products.filter(p => p.id !== id);
+                } else { return; }
+            } else {
+                prod.name = newName.trim();
+            }
+            saveAndRender();
+        }
+    }
+
+    // 其餘邏輯沿用 v9...
+    function showSuggestions(val) {
+        const list = document.getElementById('suggestionList');
+        if (!val) { list.style.display = 'none'; return; }
+        const matches = products.filter(p => p.name.includes(val)).map(p => p.name).slice(0, 5);
+        if (matches.length > 0) {
+            list.innerHTML = matches.map(m => `<div class="autocomplete-item" onclick="selectSuggestion('${m}')">${m}</div>`).join('');
+            list.style.display = 'block';
+        } else { list.style.display = 'none'; }
+    }
+
+    function selectSuggestion(name) {
+        document.getElementById('itemName').value = name;
+        document.getElementById('suggestionList').style.display = 'none';
+        document.getElementById('price').focus();
+    }
+
+    function addItem() {
+        const store = document.getElementById('store').value;
+        const name = document.getElementById('itemName').value.trim();
+        const price = parseFloat(document.getElementById('price').value);
+        const note = document.getElementById('note').value.trim();
+        const date = new Date().toLocaleDateString('zh-TW');
+
+        if (!name || isNaN(price)) return alert('請輸入名稱與價格');
+        let prod = products.find(p => p.name === name);
+        const newRecord = { id: Date.now(), date, store, price, note };
+        if (prod) { prod.history.unshift(newRecord); } 
+        else { products.unshift({ id: Date.now(), name, history: [newRecord] }); }
+        saveAndRender();
+        document.getElementById('itemName').value = '';
+        document.getElementById('price').value = '';
+        document.getElementById('note').value = '';
+    }
+
+    function editRecord(prodId, recordId) {
+        let prod = products.find(p => p.id === prodId);
+        let rec = prod.history.find(r => r.id === recordId);
+        const newPrice = prompt(`修改價格:`, rec.price);
+        if (newPrice !== null && !isNaN(parseFloat(newPrice))) {
+            const newNote = prompt(`修改備註:`, rec.note);
+            rec.price = parseFloat(newPrice);
+            if (newNote !== null) rec.note = newNote;
+            saveAndRender();
+        }
+    }
+
+    function deleteRecord(prodId, recordId) {
+        if(confirm('確定刪除紀錄？')) {
+            let prod = products.find(p => p.id === prodId);
+            prod.history = prod.history.filter(r => r.id !== recordId);
+            if(prod.history.length === 0) products = products.filter(p => p.id !== prodId);
+            saveAndRender();
+        }
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('price_master_v10', JSON.stringify(products));
+        renderList();
+    }
+
+    function renderList() {
+        const listDiv = document.getElementById('itemList');
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = products.filter(p => p.name.toLowerCase().includes(search));
+
+        listDiv.innerHTML = filtered.map(p => {
+            const minPrice = Math.min(...p.history.map(h => h.price));
+            return `
+                <div class="item-card">
+                    <div class="item-header">
+                        <span class="item-name">${p.name}</span>
+                        <button class="btn-rename" onclick="renameProduct(${p.id})">重命名</button>
+                    </div>
+                    <div class="all-time-low">💎 歷史最低價：$${minPrice}</div>
+                    <div class="history-list">
+                        ${p.history.map(h => `
+                            <div class="history-row">
+                                <div class="history-info">
+                                    <div class="history-meta"><span class="store-label">${h.store}</span>${h.date}</div>
+                                    ${h.note ? `<div class="note-text">註: ${h.note}</div>` : ''}
+                                </div>
+                                <div class="history-price-actions">
+                                    <div class="history-price">$${h.price}${h.price === minPrice ? '<span class="low-badge">🔥 史低</span>' : ''}</div>
+                                    <span class="action-links" onclick="editRecord(${p.id}, ${h.id})">修改</span>
+                                    <span class="action-links btn-del-link" onclick="deleteRecord(${p.id}, ${h.id})">刪除</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function exportJSON() {
+        const blob = new Blob([JSON.stringify(products, null, 2)], { type: "application/json" });
+        const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `價格紀錄V10.json` });
+        a.click();
+    }
+
+    function importJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try { products = JSON.parse(e.target.result); saveAndRender(); alert('匯入成功'); }
+            catch (err) { alert('檔案格式不相容'); }
+        };
+        reader.readAsText(file);
+    }
+</script>
+</body>
+</html>
