@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>物價筆記本(條碼版)</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --primary-color: #5D737E;
+            --bg-color: #F2F0EB;
+            --accent-color: #A63D40;
+            --low-price-color: #27AE60;
+            --text-main: #3E3E3E;
+            --text-sub: #8C8C8C;
+            --card-bg: #FFFFFF;
+        }
+
+        body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 450px; }
+
+        .input-card { background: var(--card-bg); padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; position: relative; }
+        .form-row { display: flex; gap: 8px; margin-bottom: 10px; }
+        .form-group { flex: 1; min-width: 0; position: relative; }
+        label { display: block; font-size: 0.75rem; color: var(--text-sub); margin-bottom: 4px; }
+        select, input { width: 100%; padding: 12px; border: 1px solid #CCC; border-radius: 6px; font-size: 1rem; }
+        
+        /* 條碼輸入區塊樣式 */
+        .barcode-group { display: flex; gap: 5px; }
+        .barcode-group input { border-radius: 6px 0 0 6px; border-right: none; }
+        .btn-scan { width: 50px; border-radius: 0 6px 6px 0; border: 1px solid #CCC; background: #EEE; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; padding: 0; }
+        
+        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #DDD; z-index: 1000; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 0 0 8px 8px; }
+        .autocomplete-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #F0F0F0; }
+
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .btn-add { background-color: var(--primary-color); color: white; margin-top: 5px; }
+        
+        .storage-tools { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-tool { background-color: #E0E0E0; font-size: 0.8rem; padding: 8px; flex: 1; color: var(--text-main); }
+
+        .search-box { margin-bottom: 15px; }
+        .search-box input { border: 2px solid var(--primary-color); border-radius: 25px; padding-left: 15px; }
+
+        /* 卡片與列表 */
+        .item-card { background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 12px; border-top: 4px solid var(--primary-color); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; flex-wrap: wrap;}
+        .item-title-group { flex: 1; }
+        .item-name { font-weight: bold; font-size: 1.2rem; display: block;}
+        .item-barcode { font-size: 0.8rem; color: #666; background: #f0f0f0; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-flex; align-items: center; gap: 5px;}
+        
+        .btn-action-sm { font-size: 0.7rem; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 2px 6px; border-radius: 4px; cursor: pointer; background: none; width: auto; font-weight: normal; margin-left: 5px; }
+        .header-actions { display: flex; gap: 5px; }
+
+        .all-time-low { display: inline-block; background: #E8F5E9; color: var(--low-price-color); padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; margin-bottom: 10px; margin-top: 5px; }
+        
+        .history-list { border-top: 1px solid #EEE; padding-top: 10px; }
+        .history-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #F0F0F0; }
+        .history-row:last-child { border-bottom: none; }
+        
+        .history-info { flex: 1; }
+        .history-meta { color: var(--text-sub); font-size: 0.75rem; margin-bottom: 2px; }
+        .store-label { background: #EEE; padding: 1px 4px; border-radius: 3px; margin-right: 4px; color: var(--text-main); }
+        .note-text { color: var(--accent-color); font-size: 0.75rem; font-style: italic; }
+        
+        .history-price-actions { text-align: right; min-width: 100px; }
+        .history-price { font-weight: bold; font-size: 1rem; margin-bottom: 4px; }
+        .low-badge { color: white; background: var(--low-price-color); padding: 1px 4px; border-radius: 3px; font-size: 0.65rem; margin-left: 5px; }
+
+        .action-links { font-size: 0.7rem; color: #0066CC; text-decoration: underline; cursor: pointer; }
+        .btn-del-link { color: #999; margin-left: 8px; }
+
+        /* 掃描器 Modal */
+        #scanner-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 9999;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #reader { width: 100%; max-width: 500px; }
+        .scan-close-btn { margin-top: 20px; padding: 10px 30px; background: white; color: black; border-radius: 20px; width: auto; }
+        .scan-instruction { color: white; margin-bottom: 10px; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div id="scanner-modal">
+    <div class="scan-instruction">請將條碼對準框框</div>
+    <div id="reader"></div>
+    <button class="scan-close-btn" onclick="stopScanner()">❌ 關閉掃描</button>
+</div>
+
+<div class="container">
+    <h3 style="text-align:center;">📦 物價筆記本 v1.0</h3>
+
+    <div class="input-card">
+        <div class="form-row">
+            <div class="form-group" style="flex: 0.7;"><label>地點</label><select id="store"><option>全聯</option><option>家樂福</option><option>全家</option><option>7-11</option><option>好市多</option><option>其他</option></select></div>
+            <div class="form-group">
+                <label>條碼 (可選)</label>
+                <div class="barcode-group">
+                    <input type="text" id="barcodeInput" placeholder="掃描或輸入" oninput="checkBarcode(this.value)">
+                    <button class="btn-scan" onclick="startScanner('new')">📷</button>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>物品名稱</label><input type="text" id="itemName" placeholder="義美經典原味奶茶18g18包" autocomplete="off" oninput="showSuggestions(this.value)"><div id="suggestionList" class="autocomplete-list" style="display:none;"></div></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>單價</label><input type="number" id="price" inputmode="decimal"></div>
+            <div class="form-group"><label>備註</label><input type="text" id="note" placeholder="買二送一"></div>
+        </div>
+        <button class="btn-add" onclick="addItem()">⚡ 記錄價格</button>
+        <div class="storage-tools">
+            <button class="btn-tool" onclick="exportJSON()">📤 備份</button>
+            <button class="btn-tool" onclick="document.getElementById('importFile').click()">📥 匯入</button>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importJSON(event)">
+        </div>
+    </div>
+
+    <div class="search-box"><input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋商品或條碼..."></div>
+    <div id="itemList"></div>
+</div>
+
+<script>
+    // 資料結構新增 barcode 欄位
+    let products = JSON.parse(localStorage.getItem('price_master_v11')) || [];
+    // 簡單的資料遷移：如果舊資料沒有 barcode 欄位，確保之後存取不會出錯
+    
+    let html5QrcodeScanner = null;
+    let scanMode = 'new'; // 'new' or 'edit'
+    let editingProductId = null;
+
+    renderList();
+
+    // --- 掃描相關邏輯 ---
+
+    function startScanner(mode, prodId = null) {
+        scanMode = mode;
+        editingProductId = prodId;
+        document.getElementById('scanner-modal').style.display = 'flex';
+        
+        // 確保 DOM 已經顯示後再啟動
+        setTimeout(() => {
+            if (!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5Qrcode("reader");
+            }
+            
+            const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+            
+            // 優先使用後置鏡頭 environment
+            html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+            .catch(err => {
+                alert("無法啟動相機，請確認瀏覽器權限 (HTTPS required)。\n錯誤: " + err);
+                stopScanner();
+            });
+        }, 100);
+    }
+
+    function stopScanner() {
+        document.getElementById('scanner-modal').style.display = 'none';
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.stop().then(() => {
+                html5QrcodeScanner.clear();
+            }).catch(err => console.error(err));
+        }
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+        stopScanner();
+        // 播放提示音 (可選)
+        // let audio = new Audio('beep.mp3'); audio.play(); 
+
+        if (scanMode === 'new') {
+            // 新增模式
+            document.getElementById('barcodeInput').value = decodedText;
+            checkBarcode(decodedText); // 觸發自動填入
+        } else if (scanMode === 'edit' && editingProductId) {
+            // 修改模式
+            updateProductBarcode(editingProductId, decodedText);
+        }
+    }
+
+    // 檢查條碼是否存在於資料庫
+    function checkBarcode(code) {
+        if (!code) return;
+        const existProd = products.find(p => p.barcode === code);
+        if (existProd) {
+            // 如果找到，自動帶入名稱
+            document.getElementById('itemName').value = existProd.name;
+            // 視覺提示
+            document.getElementById('itemName').style.backgroundColor = "#E8F5E9";
+            setTimeout(() => document.getElementById('itemName').style.backgroundColor = "white", 1000);
+            
+            // 可以選擇聚焦到價格欄位
+            document.getElementById('price').focus();
+        }
+    }
+
+    // 修改特定商品的條碼
+    function updateProductBarcode(id, code) {
+        let prod = products.find(p => p.id === id);
+        
+        // 檢查條碼是否被其他商品使用
+        const duplicate = products.find(p => p.barcode === code && p.id !== id);
+        if (duplicate) {
+            if(!confirm(`條碼 ${code} 已被「${duplicate.name}」使用。\n確定要將此條碼轉移給「${prod.name}」嗎？`)) {
+                return;
+            }
+            // 清除另一個商品的條碼以免重複 (視需求而定，通常條碼應唯一)
+            duplicate.barcode = ""; 
+        }
+
+        prod.barcode = code;
+        saveAndRender();
+        alert(`已更新「${prod.name}」的條碼為：${code}`);
+    }
+
+
+    // --- 原有邏輯修改 ---
+
+    function renameProduct(id) {
+        let prod = products.find(p => p.id === id);
+        const newName = prompt(`將「${prod.name}」修改為新的品名:`, prod.name);
+        if (newName && newName.trim() !== "" && newName !== prod.name) {
+            const duplicate = products.find(p => p.name === newName.trim());
+            if (duplicate) {
+                if (confirm(`已有「${newName.trim()}」的紀錄，是否將兩者合併？`)) {
+                    duplicate.history = [...duplicate.history, ...prod.history];
+                    // 合併時，如果舊的有條碼，新的沒有，則保留舊的條碼
+                    if (!duplicate.barcode && prod.barcode) duplicate.barcode = prod.barcode;
+                    products = products.filter(p => p.id !== id);
+                } else { return; }
+            } else {
+                prod.name = newName.trim();
+            }
+            saveAndRender();
+        }
+    }
+
+    function showSuggestions(val) {
+        const list = document.getElementById('suggestionList');
+        if (!val) { list.style.display = 'none'; return; }
+        // 搜尋名稱
+        const matches = products.filter(p => p.name.includes(val)).map(p => p.name).slice(0, 5);
+        if (matches.length > 0) {
+            list.innerHTML = matches.map(m => `<div class="autocomplete-item" onclick="selectSuggestion('${m}')">${m}</div>`).join('');
+            list.style.display = 'block';
+        } else { list.style.display = 'none'; }
+    }
+
+    function selectSuggestion(name) {
+        document.getElementById('itemName').value = name;
+        document.getElementById('suggestionList').style.display = 'none';
+        
+        // 自動帶入該商品的條碼 (如果有)
+        const prod = products.find(p => p.name === name);
+        if (prod && prod.barcode) {
+            document.getElementById('barcodeInput').value = prod.barcode;
+        }
+
+        document.getElementById('price').focus();
+    }
+
+    function addItem() {
+        const store = document.getElementById('store').value;
+        const name = document.getElementById('itemName').value.trim();
+        const price = parseFloat(document.getElementById('price').value);
+        const note = document.getElementById('note').value.trim();
+        const barcode = document.getElementById('barcodeInput').value.trim(); // 取得條碼
+        const date = new Date().toLocaleDateString('zh-TW');
+
+        if (!name || isNaN(price)) return alert('請輸入名稱與價格');
+        
+        // 優先用條碼找，再用名稱找
+        let prod = products.find(p => (barcode && p.barcode === barcode) || p.name === name);
+
+        const newRecord = { id: Date.now(), date, store, price, note };
+
+        if (prod) {
+            // 如果是用名稱找到的，但現在輸入了新條碼且原本沒有條碼，則補上
+            if (barcode && !prod.barcode) {
+                prod.barcode = barcode;
+            }
+            // 如果名稱變了但條碼一樣 (可能是使用者想修正名稱)，這裡先保持原名，用 rename 功能修改較安全
+            
+            prod.history.unshift(newRecord);
+        } else { 
+            // 完全新商品
+            products.unshift({ 
+                id: Date.now(), 
+                name, 
+                barcode: barcode, // 儲存條碼
+                history: [newRecord] 
+            }); 
+        }
+        
+        saveAndRender();
+        // 清空欄位
+        document.getElementById('itemName').value = '';
+        document.getElementById('price').value = '';
+        document.getElementById('note').value = '';
+        document.getElementById('barcodeInput').value = '';
+    }
+
+    function editRecord(prodId, recordId) {
+        let prod = products.find(p => p.id === prodId);
+        let rec = prod.history.find(r => r.id === recordId);
+        const newPrice = prompt(`修改價格:`, rec.price);
+        if (newPrice !== null && !isNaN(parseFloat(newPrice))) {
+            const newNote = prompt(`修改備註:`, rec.note);
+            rec.price = parseFloat(newPrice);
+            if (newNote !== null) rec.note = newNote;
+            saveAndRender();
+        }
+    }
+
+    function deleteRecord(prodId, recordId) {
+        if(confirm('確定刪除紀錄？')) {
+            let prod = products.find(p => p.id === prodId);
+            prod.history = prod.history.filter(r => r.id !== recordId);
+            if(prod.history.length === 0) products = products.filter(p => p.id !== prodId);
+            saveAndRender();
+        }
+    }
+
+    function saveAndRender() {
+        // 更新版本號以免混淆
+        localStorage.setItem('price_master_v11', JSON.stringify(products));
+        renderList();
+    }
+
+    function renderList() {
+        const listDiv = document.getElementById('itemList');
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        
+        // 搜尋邏輯：同時搜尋名稱與條碼
+        const filtered = products.filter(p => 
+            p.name.toLowerCase().includes(search) || 
+            (p.barcode && p.barcode.includes(search))
+        );
+
+        listDiv.innerHTML = filtered.map(p => {
+            const minPrice = Math.min(...p.history.map(h => h.price));
+            return `
+                <div class="item-card">
+                    <div class="item-header">
+                        <div class="item-title-group">
+                            <span class="item-name">${p.name}</span>
+                            ${p.barcode ? `<span class="item-barcode">📊 ${p.barcode} <button class="btn-action-sm" onclick="startScanner('edit', ${p.id})">修改</button></span>` : 
+                                         `<button class="btn-action-sm" onclick="startScanner('edit', ${p.id})">➕ 綁定條碼</button>`}
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn-action-sm" onclick="renameProduct(${p.id})">重命名</button>
+                        </div>
+                    </div>
+                    <div class="all-time-low">💎 歷史最低價：$${minPrice}</div>
+                    <div class="history-list">
+                        ${p.history.map(h => `
+                            <div class="history-row">
+                                <div class="history-info">
+                                    <div class="history-meta"><span class="store-label">${h.store}</span>${h.date}</div>
+                                    ${h.note ? `<div class="note-text">註: ${h.note}</div>` : ''}
+                                </div>
+                                <div class="history-price-actions">
+                                    <div class="history-price">$${h.price}${h.price === minPrice ? '<span class="low-badge">🔥 史低</span>' : ''}</div>
+                                    <span class="action-links" onclick="editRecord(${p.id}, ${h.id})">修改</span>
+                                    <span class="action-links btn-del-link" onclick="deleteRecord(${p.id}, ${h.id})">刪除</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function exportJSON() {
+        const blob = new Blob([JSON.stringify(products, null, 2)], { type: "application/json" });
+        const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `價格紀錄_v11.json` });
+        a.click();
+    }
+
+    function importJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try { products = JSON.parse(e.target.result); saveAndRender(); alert('匯入成功'); }
+            catch (err) { alert('檔案格式不相容'); }
+        };
+        reader.readAsText(file);
+    }
+</script>
+</body>
+</html>
