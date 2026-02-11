@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>物價紀錄員</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+  <div id="reader" style="width: 300px;"></div>
+
+  <hr>
+
+  <div>
+    條碼：<input type="text" id="barcode" readonly> <br>
+    品名：<input type="text" id="name" placeholder="請輸入名稱"> <br>
+    價格：<input type="number" id="price" placeholder="價格"> <br>
+    備註：<input type="text" id="note" placeholder="備註"> <br>
+    <button id="save-btn">儲存紀錄</button>
+  </div>
+
+  <hr>
+
+  <h4>歷史價格紀錄</h4>
+  <ul id="history-list"></ul>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+
+    const supabase = supabase.createClient('https://ufsnkbyfalptkxukyspv.supabase.co', 'sb_publishable_rD0fVxy0gWFGKiYd-RFb3w_lQveNvv4');
+
+    const sbClient = supabase.createClient('你的URL', '你的ANON_KEY');
+
+    // 2. 用監聽器代替 onclick，這比較不會出錯
+    document.getElementById('save-btn').addEventListener('click', async () => {
+      const b = document.getElementById('barcode').value;
+      const n = document.getElementById('name').value;
+      const p = document.getElementById('price').value;
+      const nt = document.getElementById('note').value;
+
+      if (!b || !p) {
+        alert("請先掃描並輸入價格！");
+        return;
+      }
+
+      try {
+        console.log("開始儲存...");
+        // 同時更新產品名稱 (Upsert)
+        await sbClient.from('products').upsert({ barcode: b, name: n });
+        // 插入歷史價格
+        const { error } = await sbClient.from('price_history').insert([
+          { barcode: b, price: parseInt(p), note: nt }
+        ]);
+
+        if (error) throw error;
+        alert("儲存成功！");
+
+      } catch (err) {
+        console.error("儲存失敗：", err);
+        alert("失敗：" + err.message);
+      }
+    });
+
+
+
+
+
+
+
+  </script>
+</body>
+
+</html>
