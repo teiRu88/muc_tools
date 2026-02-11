@@ -26,50 +26,78 @@
   <h4>歷史價格紀錄</h4>
   <ul id="history-list"></ul>
 
+
+
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
+<script>
+  // 1. 將變數名稱改為 db
+  const db = supabase.createClient('https://ufsnkbyfalptkxukyspv.supabase.co', 'sb_publishable_rD0fVxy0gWFGKiYd-RFb3w_lQveNvv4');
 
-    const supabase = supabase.createClient('https://ufsnkbyfalptkxukyspv.supabase.co', 'sb_publishable_rD0fVxy0gWFGKiYd-RFb3w_lQveNvv4');
+  // 2. 檢查產品功能
+  async function checkProduct(barcode) {
+    console.log("偵探正在查詢條碼:", barcode);
+    const { data, error } = await db  // 這裡用 db
+      .from('products')
+      .select('name')
+      .eq('barcode', barcode)
+      .maybeSingle();
 
-    const sbClient = supabase.createClient('你的URL', '你的ANON_KEY');
+    if (data) {
+      document.getElementById('name').value = data.name;
+      console.log("找到現有產品:", data.name);
+      loadHistory(barcode); // 如果找到，順便載入歷史價格
+    } else {
+      console.log("這是新產品");
+      document.getElementById('name').value = "";
+    }
+  }
 
-    // 2. 用監聽器代替 onclick，這比較不會出錯
-    document.getElementById('save-btn').addEventListener('click', async () => {
-      const b = document.getElementById('barcode').value;
-      const n = document.getElementById('name').value;
-      const p = document.getElementById('price').value;
-      const nt = document.getElementById('note').value;
+  // 3. 儲存資料功能
+  async function saveData() {
+    const b = document.getElementById('barcode').value;
+    const n = document.getElementById('name').value;
+    const p = document.getElementById('price').value;
+    const nt = document.getElementById('note').value;
 
-      if (!b || !p) {
-        alert("請先掃描並輸入價格！");
-        return;
-      }
+    if (!b || !p) {
+      alert("請填寫條碼與價格");
+      return;
+    }
 
-      try {
-        console.log("開始儲存...");
-        // 同時更新產品名稱 (Upsert)
-        await sbClient.from('products').upsert({ barcode: b, name: n });
-        // 插入歷史價格
-        const { error } = await sbClient.from('price_history').insert([
-          { barcode: b, price: parseInt(p), note: nt }
-        ]);
+    try {
+      // 更新品名 (Upsert: 存在就更新，不存在就新增)
+      await db.from('products').upsert({ barcode: b, name: n });
+      
+      // 插入價格歷史
+      const { error } = await db.from('price_history').insert([
+        { barcode: b, price: parseInt(p), note: nt }
+      ]);
 
-        if (error) throw error;
-        alert("儲存成功！");
+      if (error) throw error;
+      alert("紀錄儲存成功！");
+      checkProduct(b); // 重新整理顯示歷史
+    } catch (err) {
+      alert("錯誤: " + err.message);
+    }
+  }
 
-      } catch (err) {
-        console.error("儲存失敗：", err);
-        alert("失敗：" + err.message);
-      }
-    });
+  // 4. 載入歷史價格
+  async function loadHistory(barcode) {
+    const { data } = await db
+      .from('price_history')
+      .select('*')
+      .eq('barcode', barcode)
+      .order('created_at', { ascending: false });
 
-
-
-
-
-
-
-  </script>
+    const list = document.getElementById('history-list');
+    if (list) {
+      list.innerHTML = data.map(h => 
+        `<li>${new Date(h.created_at).toLocaleDateString()} - $${h.price} (${h.note || '無'})</li>`
+      ).join('');
+    }
+  }
+</script>
 </body>
 
 </html>
