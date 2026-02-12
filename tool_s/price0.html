@@ -92,7 +92,7 @@
 </div>
 
 <div class="container">
-    <h3 style="text-align:center;">📦 物價筆記本 v1.0</h3>
+    <h3 style="text-align:center;">📦 物價筆記本 v1.01</h3>
 
     <div class="input-card">
         <div class="form-row">
@@ -112,7 +112,7 @@
             <div class="form-group"><label>單價</label><input type="number" id="price" inputmode="decimal"></div>
             <div class="form-group"><label>備註</label><input type="text" id="note" placeholder="買二送一"></div>
         </div>
-        <button class="btn-add" onclick="addItem()">⚡ 記錄價格</button>
+        <button class="btn-add" onclick="addItem()">記錄價格</button>
         <div class="storage-tools">
             <button class="btn-tool" onclick="exportJSON()">📤 備份</button>
             <button class="btn-tool" onclick="document.getElementById('importFile').click()">📥 匯入</button>
@@ -147,18 +147,40 @@
             if (!html5QrcodeScanner) {
                 html5QrcodeScanner = new Html5Qrcode("reader");
             }
-            
-            const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
-            
-            // 優先使用後置鏡頭 environment
-            html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
-            .catch(err => {
-                alert("無法啟動相機，請確認瀏覽器權限 (HTTPS required)。\n錯誤: " + err);
-                stopScanner();
-            });
-        }, 100);
-    }
 
+            
+const config = { 
+        fps: 10, 
+        qrbox: { width: 300, height: 200 },
+        // 限制格式：僅支援 EAN-13 與 UPC-A
+        formatsToSupport: [ 
+            Html5QrcodeSupportedFormats.EAN_13, 
+            Html5QrcodeSupportedFormats.UPC_A 
+        ],
+        // 鏡頭控制
+        videoConstraints: {
+            facingMode: "environment", // 強制後鏡頭
+            focusMode: "continuous",   // 連續自動對焦
+            // 比例 1.5 (即 300/200)，確保影像與框框比例一致
+            aspectRatio: 1.5
+        }
+    };
+
+            
+// 啟動掃描
+    html5QrcodeScanner.start(
+        { facingMode: "environment" }, 
+        config, 
+        onScanSuccess
+    )
+    .catch(err => {
+        console.error("Camera Error:", err);
+        alert("無法啟動相機，請確認：\n1. 是否使用 HTTPS 連線\n2. 已授權相機權限\n3. 鏡頭未被其他程式佔用");
+        if (typeof stopScanner === "function") stopScanner();
+    });
+}, 100);
+
+        
     function stopScanner() {
         document.getElementById('scanner-modal').style.display = 'none';
         if (html5QrcodeScanner) {
@@ -171,7 +193,7 @@
     function onScanSuccess(decodedText, decodedResult) {
         stopScanner();
         // 播放提示音 (可選)
-        // let audio = new Audio('beep.mp3'); audio.play(); 
+        let audio = new Audio('beep.mp3'); audio.play(); 
 
         if (scanMode === 'new') {
             // 新增模式
@@ -395,4 +417,5 @@
     }
 </script>
 </body>
+
 </html>
