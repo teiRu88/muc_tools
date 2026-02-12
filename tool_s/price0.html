@@ -92,7 +92,7 @@
 </div>
 
 <div class="container">
-    <h3 style="text-align:center;">📦 物價筆記本 v1.0</h3>
+    <h3 style="text-align:center;">📦 物價筆記本 v1.01</h3>
 
     <div class="input-card">
         <div class="form-row">
@@ -148,7 +148,10 @@
                 html5QrcodeScanner = new Html5Qrcode("reader");
             }
             
-            const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+            const config = { fps: 10, qrbox: { width: 300, height: 200 }, 
+                            formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, 
+                                               Html5QrcodeSupportedFormats.UPC_A ],
+                           };
             
             // 優先使用後置鏡頭 environment
             html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
@@ -395,4 +398,5 @@
     }
 </script>
 </body>
+
 </html>
