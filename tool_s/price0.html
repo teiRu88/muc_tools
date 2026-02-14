@@ -86,7 +86,7 @@
 </div>
 
 <div class="container">
-    <h3 style="text-align:center;">📦 物價筆記本 v1.09</h3>
+    <h3 style="text-align:center;">📦 物價筆記本 v1.10</h3>
 
     <div class="input-card">
         <div class="form-row">
@@ -103,8 +103,8 @@
             <div class="form-group"><label>商品名稱</label><input type="text" id="itemName" placeholder="義美經典原味奶茶" autocomplete="off" oninput="showSuggestions(this.value)"><div id="suggestionList" class="autocomplete-list" style="display:none;"></div></div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>容量(g/ml)</label><input type="number" id="spec" placeholder="公克、毫升" inputmode="decimal"></div>
-            <div class="form-group"><label>特價綁定數或小包</label><input type="number" id="qty" value="1" inputmode="decimal"></div>
+            <div class="form-group"><label>容量(單條碼含量)</label><input type="number" id="spec" placeholder="公克、毫升" inputmode="decimal"></div>
+            <div class="form-group"><label>數量(優惠需購足)</label><input type="number" id="qty" value="1" inputmode="decimal"></div>
             <div class="form-group"><label>總價</label><input type="number" id="price" placeholder="注意是總價" inputmode="decimal"></div>
         </div>
         <div class="form-row">
@@ -272,8 +272,8 @@
                         </div>
                     </div>
                     <div class="all-time-low">
-                        🏷️ 歷史最低單價：$${minItemPrice.toFixed(2)} / 件<br>
-                        💎 每g最低：$${min1gPrice === Infinity ? 'N/A' : min1gPrice.toFixed(2)}
+                        🏷️ 最低單價：<span style="color: red;">$${Math.round(minItemPrice)}</span> <br>
+                        💎 gml史低：$${min1gPrice === Infinity ? 'N/A' : min1gPrice.toFixed(2)}
                     </div>
                     <div class="history-list">
                         ${p.history.map(h => {
@@ -284,7 +284,7 @@
                             <div class="history-row">
                                 <div class="history-info">
                                     <div class="history-meta"><span class="store-label">${h.store}</span>${h.date}</div>
-                                    <div class="unit-price">容量: ${h.spec || 0} | 數量: ${h.qty || 1} | 總價: $${h.price} | 每g價格: ${perGramPrice}</div>
+                                    <div class="unit-price">容量: ${h.spec || 0} | 數量: ${h.qty || 1} | 總價: $${h.price} | 每容量價格: ${perGramPrice}</div>
                                     ${h.note ? `<div class="note-text">註: ${h.note}</div>` : ''}
                                 </div>
                                 <div class="history-price-actions">
@@ -324,7 +324,7 @@
 
     function exportJSON() {
         const blob = new Blob([JSON.stringify(products, null, 2)], { type: "application/json" });
-        const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `價格紀錄_v109.json` });
+        const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `價格紀錄_v110.json` });
         a.click();
     }
 
