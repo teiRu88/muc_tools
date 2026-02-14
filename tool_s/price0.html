@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>物價筆記本(條碼版)</title>
+    <title>物價筆記本</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
-        
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
             --primary-color: #5D737E;
@@ -27,7 +26,6 @@
         label { display: block; font-size: 0.75rem; color: var(--text-sub); margin-bottom: 4px; }
         select, input { width: 100%; padding: 12px; border: 1px solid #CCC; border-radius: 6px; font-size: 1rem; }
         
-        /* 條碼輸入區塊樣式 */
         .barcode-group { display: flex; gap: 5px; }
         .barcode-group input { border-radius: 6px 0 0 6px; border-right: none; }
         .btn-scan { width: 50px; border-radius: 0 6px 6px 0; border: 1px solid #CCC; background: #EEE; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; padding: 0; }
@@ -44,7 +42,6 @@
         .search-box { margin-bottom: 15px; }
         .search-box input { border: 2px solid var(--primary-color); border-radius: 25px; padding-left: 15px; }
 
-        /* 卡片與列表 */
         .item-card { background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 12px; border-top: 4px solid var(--primary-color); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; flex-wrap: wrap;}
         .item-title-group { flex: 1; }
@@ -62,6 +59,7 @@
         
         .history-info { flex: 1; }
         .history-meta { color: var(--text-sub); font-size: 0.75rem; margin-bottom: 2px; }
+        .unit-price { color: #555; font-size: 0.8rem; font-weight: bold; margin-top: 2px; }
         .store-label { background: #EEE; padding: 1px 4px; border-radius: 3px; margin-right: 4px; color: var(--text-main); }
         .note-text { color: var(--accent-color); font-size: 0.75rem; font-style: italic; }
         
@@ -72,7 +70,6 @@
         .action-links { font-size: 0.7rem; color: #0066CC; text-decoration: underline; cursor: pointer; }
         .btn-del-link { color: #999; margin-left: 8px; }
 
-        /* 掃描器 Modal */
         #scanner-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); z-index: 9999;
@@ -92,7 +89,7 @@
 </div>
 
 <div class="container">
-    <h3 style="text-align:center;">📦 物價筆記本 v1.02</h3>
+    <h3 style="text-align:center;">📦 物價筆記本 v1.05</h3>
 
     <div class="input-card">
         <div class="form-row">
@@ -106,11 +103,15 @@
             </div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>物品名稱</label><input type="text" id="itemName" placeholder="義美經典原味奶茶18g18包" autocomplete="off" oninput="showSuggestions(this.value)"><div id="suggestionList" class="autocomplete-list" style="display:none;"></div></div>
+            <div class="form-group"><label>商品名稱</label><input type="text" id="itemName" placeholder="義美經典原味奶茶" autocomplete="off" oninput="showSuggestions(this.value)"><div id="suggestionList" class="autocomplete-list" style="display:none;"></div></div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>單價</label><input type="number" id="price" inputmode="decimal"></div>
-            <div class="form-group"><label>備註</label><input type="text" id="note" placeholder="買二送一"></div>
+            <div class="form-group"><label>規格(g/ml)</label><input type="number" id="spec" placeholder="公克、毫升" inputmode="decimal"></div>
+            <div class="form-group"><label>數量</label><input type="number" id="qty" value="1" inputmode="decimal"></div>
+            <div class="form-group"><label>單價</label><input type="number" id="price" placeholder="價格" inputmode="decimal"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>備註</label><input type="text" id="note" placeholder="買二送一、其他通路"></div>
         </div>
         <button class="btn-add" onclick="addItem()">⚡ 記錄價格</button>
         <div class="storage-tools">
@@ -125,185 +126,82 @@
 </div>
 
 <script>
-    // 資料結構新增 barcode 欄位
     let products = JSON.parse(localStorage.getItem('price_master_v11')) || [];
-    // 簡單的資料遷移：如果舊資料沒有 barcode 欄位，確保之後存取不會出錯
-    
     let html5QrcodeScanner = null;
-    let scanMode = 'new'; // 'new' or 'edit'
+    let scanMode = 'new';
     let editingProductId = null;
 
     renderList();
-
-    // --- 掃描相關邏輯 ---
 
     function startScanner(mode, prodId = null) {
         scanMode = mode;
         editingProductId = prodId;
         document.getElementById('scanner-modal').style.display = 'flex';
-        
-        // 確保 DOM 已經顯示後再啟動
         setTimeout(() => {
-            if (!html5QrcodeScanner) {
-                html5QrcodeScanner = new Html5Qrcode("reader");
-            }
-            
-            const config = { fps: 10, qrbox: { width: 300, height: 200 }, 
-                            formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, 
-                                               Html5QrcodeSupportedFormats.UPC_A ],
-                           };
-            
-            // 優先使用後置鏡頭 environment
+            if (!html5QrcodeScanner) { html5QrcodeScanner = new Html5Qrcode("reader"); }
+            const config = { fps: 10, qrbox: { width: 300, height: 200 }, formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.UPC_A ] };
             html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
-            .catch(err => {
-                alert("無法啟動相機，請確認瀏覽器權限 (HTTPS required)。\n錯誤: " + err);
-                stopScanner();
-            });
+            .catch(err => { alert("無法啟動相機"); stopScanner(); });
         }, 100);
     }
 
     function stopScanner() {
         document.getElementById('scanner-modal').style.display = 'none';
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.stop().then(() => {
-                html5QrcodeScanner.clear();
-            }).catch(err => console.error(err));
-        }
+        if (html5QrcodeScanner) { html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear()).catch(err => console.error(err)); }
     }
 
-    function onScanSuccess(decodedText, decodedResult) {
+    function onScanSuccess(decodedText) {
         stopScanner();
-        // 播放提示音 (可選)
-        // let audio = new Audio('beep.mp3'); audio.play(); 
-
         if (scanMode === 'new') {
-            // 新增模式
             document.getElementById('barcodeInput').value = decodedText;
-            checkBarcode(decodedText); // 觸發自動填入
+            checkBarcode(decodedText);
         } else if (scanMode === 'edit' && editingProductId) {
-            // 修改模式
             updateProductBarcode(editingProductId, decodedText);
         }
     }
 
-    // 檢查條碼是否存在於資料庫
     function checkBarcode(code) {
         if (!code) return;
         const existProd = products.find(p => p.barcode === code);
         if (existProd) {
-            // 如果找到，自動帶入名稱
             document.getElementById('itemName').value = existProd.name;
-            // 視覺提示
-            document.getElementById('itemName').style.backgroundColor = "#E8F5E9";
-            setTimeout(() => document.getElementById('itemName').style.backgroundColor = "white", 1000);
-            
-            // 可以選擇聚焦到價格欄位
-            document.getElementById('price').focus();
+            document.getElementById('spec').focus();
         }
     }
 
-    // 修改特定商品的條碼
     function updateProductBarcode(id, code) {
         let prod = products.find(p => p.id === id);
-        
-        // 檢查條碼是否被其他商品使用
-        const duplicate = products.find(p => p.barcode === code && p.id !== id);
-        if (duplicate) {
-            if(!confirm(`條碼 ${code} 已被「${duplicate.name}」使用。\n確定要將此條碼轉移給「${prod.name}」嗎？`)) {
-                return;
-            }
-            // 清除另一個商品的條碼以免重複 (視需求而定，通常條碼應唯一)
-            duplicate.barcode = ""; 
-        }
-
         prod.barcode = code;
         saveAndRender();
-        alert(`已更新「${prod.name}」的條碼為：${code}`);
-    }
-
-
-    // --- 原有邏輯修改 ---
-
-    function renameProduct(id) {
-        let prod = products.find(p => p.id === id);
-        const newName = prompt(`將「${prod.name}」修改為新的品名:`, prod.name);
-        if (newName && newName.trim() !== "" && newName !== prod.name) {
-            const duplicate = products.find(p => p.name === newName.trim());
-            if (duplicate) {
-                if (confirm(`已有「${newName.trim()}」的紀錄，是否將兩者合併？`)) {
-                    duplicate.history = [...duplicate.history, ...prod.history];
-                    // 合併時，如果舊的有條碼，新的沒有，則保留舊的條碼
-                    if (!duplicate.barcode && prod.barcode) duplicate.barcode = prod.barcode;
-                    products = products.filter(p => p.id !== id);
-                } else { return; }
-            } else {
-                prod.name = newName.trim();
-            }
-            saveAndRender();
-        }
-    }
-
-    function showSuggestions(val) {
-        const list = document.getElementById('suggestionList');
-        if (!val) { list.style.display = 'none'; return; }
-        // 搜尋名稱
-        const matches = products.filter(p => p.name.includes(val)).map(p => p.name).slice(0, 5);
-        if (matches.length > 0) {
-            list.innerHTML = matches.map(m => `<div class="autocomplete-item" onclick="selectSuggestion('${m}')">${m}</div>`).join('');
-            list.style.display = 'block';
-        } else { list.style.display = 'none'; }
-    }
-
-    function selectSuggestion(name) {
-        document.getElementById('itemName').value = name;
-        document.getElementById('suggestionList').style.display = 'none';
-        
-        // 自動帶入該商品的條碼 (如果有)
-        const prod = products.find(p => p.name === name);
-        if (prod && prod.barcode) {
-            document.getElementById('barcodeInput').value = prod.barcode;
-        }
-
-        document.getElementById('price').focus();
     }
 
     function addItem() {
         const store = document.getElementById('store').value;
         const name = document.getElementById('itemName').value.trim();
         const price = parseFloat(document.getElementById('price').value);
+        const spec = parseFloat(document.getElementById('spec').value) || 0;
+        const qty = parseFloat(document.getElementById('qty').value) || 1;
         const note = document.getElementById('note').value.trim();
-        const barcode = document.getElementById('barcodeInput').value.trim(); // 取得條碼
+        const barcode = document.getElementById('barcodeInput').value.trim();
         const date = new Date().toLocaleDateString('zh-TW');
 
         if (!name || isNaN(price)) return alert('請輸入名稱與價格');
         
-        // 優先用條碼找，再用名稱找
         let prod = products.find(p => (barcode && p.barcode === barcode) || p.name === name);
-
-        const newRecord = { id: Date.now(), date, store, price, note };
+        const newRecord = { id: Date.now(), date, store, price, spec, qty, note };
 
         if (prod) {
-            // 如果是用名稱找到的，但現在輸入了新條碼且原本沒有條碼，則補上
-            if (barcode && !prod.barcode) {
-                prod.barcode = barcode;
-            }
-            // 如果名稱變了但條碼一樣 (可能是使用者想修正名稱)，這裡先保持原名，用 rename 功能修改較安全
-            
+            if (barcode && !prod.barcode) prod.barcode = barcode;
             prod.history.unshift(newRecord);
         } else { 
-            // 完全新商品
-            products.unshift({ 
-                id: Date.now(), 
-                name, 
-                barcode: barcode, // 儲存條碼
-                history: [newRecord] 
-            }); 
+            products.unshift({ id: Date.now(), name, barcode, history: [newRecord] }); 
         }
         
         saveAndRender();
-        // 清空欄位
         document.getElementById('itemName').value = '';
         document.getElementById('price').value = '';
+        document.getElementById('spec').value = '';
+        document.getElementById('qty').value = '1';
         document.getElementById('note').value = '';
         document.getElementById('barcodeInput').value = '';
     }
@@ -311,10 +209,16 @@
     function editRecord(prodId, recordId) {
         let prod = products.find(p => p.id === prodId);
         let rec = prod.history.find(r => r.id === recordId);
-        const newPrice = prompt(`修改價格:`, rec.price);
+        
+        const newPrice = prompt(`修改價格(總價):`, rec.price);
         if (newPrice !== null && !isNaN(parseFloat(newPrice))) {
+            const newSpec = prompt(`修改規格(g/ml):`, rec.spec || 0);
+            const newQty = prompt(`修改數量:`, rec.qty || 1);
             const newNote = prompt(`修改備註:`, rec.note);
+            
             rec.price = parseFloat(newPrice);
+            rec.spec = parseFloat(newSpec) || 0;
+            rec.qty = parseFloat(newQty) || 1;
             if (newNote !== null) rec.note = newNote;
             saveAndRender();
         }
@@ -330,7 +234,6 @@
     }
 
     function saveAndRender() {
-        // 更新版本號以免混淆
         localStorage.setItem('price_master_v11', JSON.stringify(products));
         renderList();
     }
@@ -338,12 +241,7 @@
     function renderList() {
         const listDiv = document.getElementById('itemList');
         const search = document.getElementById('searchInput').value.toLowerCase();
-        
-        // 搜尋邏輯：同時搜尋名稱與條碼
-        const filtered = products.filter(p => 
-            p.name.toLowerCase().includes(search) || 
-            (p.barcode && p.barcode.includes(search))
-        );
+        const filtered = products.filter(p => p.name.toLowerCase().includes(search) || (p.barcode && p.barcode.includes(search)));
 
         listDiv.innerHTML = filtered.map(p => {
             const minPrice = Math.min(...p.history.map(h => h.price));
@@ -359,12 +257,16 @@
                             <button class="btn-action-sm" onclick="renameProduct(${p.id})">重命名</button>
                         </div>
                     </div>
-                    <div class="all-time-low">💎 歷史最低價：$${minPrice}</div>
+                    <div class="all-time-low">💎 歷史最低總價：$${minPrice}</div>
                     <div class="history-list">
-                        ${p.history.map(h => `
+                        ${p.history.map(h => {
+                            const totalWeight = (h.spec || 0) * (h.qty || 1);
+                            const unitPrice = totalWeight > 0 ? ((h.price / totalWeight) * 100).toFixed(2) : 'N/A';
+                            return `
                             <div class="history-row">
                                 <div class="history-info">
                                     <div class="history-meta"><span class="store-label">${h.store}</span>${h.date}</div>
+                                    <div class="unit-price">規格: ${h.spec || 0}g x ${h.qty || 1} | 每100g: $${unitPrice}</div>
                                     ${h.note ? `<div class="note-text">註: ${h.note}</div>` : ''}
                                 </div>
                                 <div class="history-price-actions">
@@ -372,17 +274,40 @@
                                     <span class="action-links" onclick="editRecord(${p.id}, ${h.id})">修改</span>
                                     <span class="action-links btn-del-link" onclick="deleteRecord(${p.id}, ${h.id})">刪除</span>
                                 </div>
-                            </div>
-                        `).join('')}
+                            </div>`;
+                        }).join('')}
                     </div>
-                </div>
-            `;
+                </div>`;
         }).join('');
+    }
+
+    function renameProduct(id) {
+        let prod = products.find(p => p.id === id);
+        const newName = prompt(`將「${prod.name}」修改為新的品名:`, prod.name);
+        if (newName && newName.trim() !== "") { prod.name = newName.trim(); saveAndRender(); }
+    }
+
+    function showSuggestions(val) {
+        const list = document.getElementById('suggestionList');
+        if (!val) { list.style.display = 'none'; return; }
+        const matches = products.filter(p => p.name.includes(val)).map(p => p.name).slice(0, 5);
+        if (matches.length > 0) {
+            list.innerHTML = matches.map(m => `<div class="autocomplete-item" onclick="selectSuggestion('${m}')">${m}</div>`).join('');
+            list.style.display = 'block';
+        } else { list.style.display = 'none'; }
+    }
+
+    function selectSuggestion(name) {
+        document.getElementById('itemName').value = name;
+        document.getElementById('suggestionList').style.display = 'none';
+        const prod = products.find(p => p.name === name);
+        if (prod && prod.barcode) document.getElementById('barcodeInput').value = prod.barcode;
+        document.getElementById('spec').focus();
     }
 
     function exportJSON() {
         const blob = new Blob([JSON.stringify(products, null, 2)], { type: "application/json" });
-        const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `價格紀錄_v11.json` });
+        const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `價格紀錄_v110.json` });
         a.click();
     }
 
@@ -398,7 +323,4 @@
     }
 </script>
 </body>
-
 </html>
-
-
