@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>黃金價值即時換算器</title>
+
     <style>
         :root {
             --bg-color: #F2F0EB;
@@ -92,23 +92,11 @@
             color: var(--text-sub);
         }
 
-        .result-box {
-            background-color: #F9F8F6;
-            padding: 15px;
+        /* 跑馬燈小工具間距調整 */
+        .widget-container {
+            margin: 15px 0;
+            overflow: hidden;
             border-radius: 8px;
-            text-align: center;
-        }
-
-        .result-value {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--accent-gold);
-        }
-
-        .result-unit {
-            font-size: 0.9rem;
-            margin-left: 5px;
-            color: var(--text-main);
         }
 
         .note {
@@ -119,7 +107,6 @@
             text-align: justify;
         }
 
-        /* 手機版優化 */
         @media (max-width: 480px) {
             .container {
                 padding: 20px;
@@ -133,7 +120,7 @@
 <body>
 
 <div class="container">
-    <h2>黃金現貨換算器</h2>
+    <h2>G Unit Converter</h2>
 
     <div class="input-group">
         <label>美金匯率 (USD/TWD)</label>
@@ -152,18 +139,15 @@
         <input type="number" id="goldTael" step="1" placeholder="輸入台錢價格反算">
     </div>
 
-    <div class="result-box">
-        <div id="displayResult">
-            <span class="result-value" id="calcValue">0</span>
-            <span class="result-unit" id="calcUnit">TWD / 台錢</span>
-        </div>
+    <div class="widget-container">
+        <script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"></script>
+        <tv-ticker-tape symbols='CMCMARKETS:GOLD,PEPPERSTONE:USDTWD' hover-type="performance-grid"></tv-ticker-tape>
     </div>
 
     <div class="note">
-        * 注意事項：本計算機採用理論物理換算（1 盎司 = 8.294 台錢）。實際交易時，台銀 AU9901 或實體銀樓價格可能含有 0.3% - 1% 不等之溢價或處理費，實際價格請以各交易平台掛牌為準。</p>
-	計算公式：</br>
-	(盎司國際金價÷8.294)×美金兌台幣匯率＝1 台錢台幣價
-	
+        * 注意事項：本計算機採用理論物理換算（1 盎司 = 8.294 台錢）。實際交易時，台銀 AU9901 或實體銀樓價格可能含有 0.3% - 1% 不等之溢價或處理費，實際價格請以各交易平台掛牌為準。<br>
+        計算公式：<br>
+        (盎司國際金價÷8.294)×美金兌台幣匯率＝1 台錢台幣價
     </div>
 </div>
 
@@ -171,9 +155,7 @@
     const fxRateInput = document.getElementById('fxRate');
     const goldOzInput = document.getElementById('goldOz');
     const goldTaelInput = document.getElementById('goldTael');
-    const calcValue = document.getElementById('calcValue');
 
-    // 換算常數：1 盎司 = 0.8294 台兩 = 8.294 台錢
     const OZ_TO_TAEL = 8.294;
 
     function updateFromOz() {
@@ -183,7 +165,6 @@
         if (usd && fx) {
             const twdPerTael = (usd / OZ_TO_TAEL) * fx;
             goldTaelInput.value = Math.round(twdPerTael);
-            calcValue.innerText = Math.round(twdPerTael).toLocaleString();
         }
     }
 
@@ -194,16 +175,13 @@
         if (twd && fx) {
             const usdPerOz = (twd * OZ_TO_TAEL) / fx;
             goldOzInput.value = Math.round(usdPerOz);
-            calcValue.innerText = Math.round(usdPerOz).toLocaleString();
         }
     }
 
-    // 即時輸入監聽
     fxRateInput.addEventListener('input', updateFromOz);
     goldOzInput.addEventListener('input', updateFromOz);
     goldTaelInput.addEventListener('input', updateFromTael);
 
-    // 初始化計算一次
     updateFromOz();
 </script>
 
