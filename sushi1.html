@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>極致壽司計算器-雅致大鈕版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+
+        :root {
+            --bg-color: #f7f3ed;
+            --card-bg: #ffffff;
+            --primary-red: #b91c1c;
+            --text-main: #2d2a26;
+            --text-sub: #8c857d;
+            
+            /* 盤子顏色定義 */
+            --plate-30: #d2b48c; /* 奶茶色 */
+            --plate-40: #b91c1c; /* 紅色 */
+            --plate-50: #166534; /* 綠色 */
+            --plate-60: #a0a0a0; /* 銀色 */
+            --plate-70: #1d4ed8; /* 藍色 */
+            --plate-80: #d4af37; /* 金色 */
+            --plate-100: #1a1a1a; /* 黑色 */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Noto Sans TC', sans-serif;
+            color: var(--text-main);
+            user-select: none;
+        }
+
+        /* 陶瓷質感盤子按鈕 */
+        .plate-btn {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.1s ease-out;
+            width: 85px;
+            height: 85px;
+        }
+
+        .plate-shadow {
+            position: absolute;
+            top: 4px;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(45, 42, 38, 0.15);
+        }
+
+        .plate-surface {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 900;
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.3);
+            border: 2px solid rgba(0,0,0,0.05);
+        }
+
+        .plate-btn:active { transform: translateY(2px); }
+        .plate-btn:active .plate-shadow { transform: translateY(-2px); }
+
+        /* 金額顏色標記 */
+        .color-30 { background-color: var(--plate-30); }
+        .color-40 { background-color: var(--plate-40); }
+        .color-50 { background-color: var(--plate-50); }
+        .color-60 { background-color: var(--plate-60); }
+        .color-70 { background-color: var(--plate-70); }
+        .color-80 { background-color: var(--plate-80); }
+        .color-100 { background-color: var(--plate-100); }
+        .color-custom { background-color: #78716c; }
+
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(140, 133, 125, 0.15);
+            box-shadow: 0 10px 30px -5px rgba(45, 42, 38, 0.05);
+        }
+
+        /* 盤數數字氣泡 */
+        .count-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #2d2a26;
+            color: #f7f3ed;
+            min-width: 28px;
+            height: 28px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 900;
+            border: 2px solid white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        @keyframes countJump {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+        .count-update { animation: countJump 0.2s ease-out; }
+
+        /* 減號按鈕 */
+        .minus-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #e7e0d7;
+            color: #8c857d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            transition: all 0.2s;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .minus-btn:active { background: #dcd3c8; transform: scale(0.9); }
+    </style>
+</head>
+<body class="min-h-screen pb-32">
+
+    <header class="bg-[#2d2a26] text-[#f7f3ed] p-5 sticky top-0 z-50 shadow-xl flex justify-between items-center border-b border-[#b91c1c]/30">
+        <h1 class="text-xl font-black tracking-[0.2em] flex items-center">
+            <span class="mr-2">🍣</span> 壽司計算器
+        </h1>
+        <button onclick="toggleScanner()" class="bg-[#b91c1c] hover:bg-[#991b1b] text-white px-5 py-2 rounded-full text-xs font-bold tracking-widest transition-all active:scale-95 shadow-lg">
+            掃描
+        </button>
+    </header>
+
+    <main class="p-6 max-w-md mx-auto">
+        <!-- 總計儀表板 -->
+        <div class="glass-card rounded-[2.5rem] p-8 mb-8 text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#b91c1c]/20 to-transparent"></div>
+            
+            <div class="mb-4">
+                <p class="text-[#8c857d] text-[10px] font-bold uppercase tracking-[0.3em] mb-2">Grand Total</p>
+                <p id="totalAmount" class="text-6xl font-black text-[#2d2a26] tracking-tighter">$ 0</p>
+            </div>
+            
+            <div class="pt-6 border-t border-dashed border-[#e7e0d7]">
+                <div id="plateSummary" class="flex flex-wrap justify-center gap-2">
+                    <span class="text-[#8c857d]/50 text-sm italic">尚無點餐紀錄</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 點餐清單區 -->
+        <div id="itemContainer" class="space-y-4">
+            <!-- 由 JS 動態生成 -->
+        </div>
+
+        <!-- 底部固定按鈕 -->
+        <div class="fixed bottom-0 left-0 w-full p-4 bg-gradient-to-t from-[#f7f3ed] via-[#f7f3ed] to-transparent pointer-events-none">
+            <div class="max-w-md mx-auto flex gap-3 pointer-events-auto">
+                <button onclick="addNewRow()" class="flex-1 py-4 bg-[#e7e0d7] text-[#57534e] rounded-2xl font-bold active:scale-95 transition-all tracking-widest text-sm shadow-md">
+                    ＋ 新增金額
+                </button>
+                <button onclick="generateQR()" class="flex-[2] py-4 bg-[#166534] text-[#f7f3ed] rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-all tracking-widest">
+                    產生結帳 QR
+                </button>
+            </div>
+        </div>
+
+        <!-- QR Code 顯示區域 -->
+        <div id="qrcodeContainer" class="hidden mt-6 p-8 bg-white rounded-[2rem] text-center shadow-2xl border border-[#e7e0d7]">
+            <p class="mb-5 font-bold text-[#2d2a26] tracking-widest">請朋友掃描同步</p>
+            <div id="qrcode" class="flex justify-center mb-8 p-4 bg-white ring-1 ring-[#e7e0d7] rounded-2xl"></div>
+            <button onclick="this.parentElement.classList.add('hidden')" class="w-full py-2 text-[#8c857d] font-bold">關閉</button>
+        </div>
+
+        <!-- 朋友的數據 -->
+        <div id="scanResult" class="hidden mt-6 p-8 bg-[#fdfaf3] border border-[#e9e3d0] rounded-[2rem] shadow-xl">
+            <h3 class="font-black text-xl mb-6 text-[#454138] flex items-center border-b border-[#e9e3d0] pb-3">
+                <span class="mr-3">📋</span> 朋友的結帳清單
+            </h3>
+            <div id="scanDetail" class="text-lg space-y-3 mb-6"></div>
+            <div id="scanTotal" class="text-2xl font-black text-[#b91c1c] pt-4 border-t border-[#e9e3d0]"></div>
+        </div>
+    </main>
+
+    <!-- 掃描 Modal -->
+    <div id="scannerModal" class="hidden fixed inset-0 bg-[#2d2a26] z-[60] flex flex-col">
+        <div id="reader" class="w-full h-3/4"></div>
+        <div class="flex-1 flex items-center justify-center p-8 bg-[#2d2a26]">
+            <button onclick="toggleScanner()" class="w-full bg-white/5 text-white border border-white/10 py-5 rounded-2xl font-bold tracking-widest">
+                取消掃描
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const defaultPrices = ["30", "40", "50", "60", "70", "80", "100"];
+        let data = {};
+        let order = []; // 用來紀錄顯示順序
+
+        // 初始化預設金額
+        defaultPrices.forEach(p => {
+            data[p] = 0;
+            order.push(p);
+        });
+
+        const itemContainer = document.getElementById('itemContainer');
+        const plateSummary = document.getElementById('plateSummary');
+
+        function init() {
+            renderRows();
+            updateUI();
+        }
+
+        function renderRows() {
+            itemContainer.innerHTML = "";
+            // 根據 order 陣列的順序渲染，預設金額維持 30->100，自訂金額排在後面
+            order.forEach(price => createRow(price));
+        }
+
+        function createRow(price) {
+            const div = document.createElement('div');
+            div.className = "glass-card flex items-center justify-between p-4 pl-6 rounded-[2.5rem] transition-all";
+            
+            const colorClass = defaultPrices.includes(price) ? `color-${price}` : 'color-custom';
+            
+            div.innerHTML = `
+                <div class="flex flex-col">
+                    <span class="text-[#8c857d] text-[10px] font-black uppercase tracking-[0.2em]">UnitPrice</span>
+                    <div class="font-black text-3xl text-[#2d2a26] italic">$${price}</div>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <button onclick="change('${price}', -1)" class="minus-btn">－</button>
+                    
+                    <div class="plate-btn" onclick="change('${price}', 1)">
+                        <div class="plate-shadow"></div>
+                        <div id="badge-${price}" class="count-badge hidden">0</div>
+                        <div class="plate-surface ${colorClass}">
+                            <span class="text-[10px] opacity-60">NT.</span>
+                            <span class="text-2xl">${price}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            itemContainer.appendChild(div);
+        }
+
+        function change(price, delta) {
+            data[price] = Math.max(0, (data[price] || 0) + delta);
+            
+            // 視覺動畫回饋
+            const badge = document.getElementById(`badge-${price}`);
+            if (badge) {
+                badge.innerText = data[price];
+                badge.classList.toggle('hidden', data[price] <= 0);
+                badge.classList.remove('count-update');
+                void badge.offsetWidth;
+                badge.classList.add('count-update');
+            }
+            
+            if (window.navigator.vibrate) window.navigator.vibrate(delta > 0 ? 30 : 15);
+            updateUI();
+        }
+
+        function addNewRow() {
+            const priceInput = prompt("請輸入自訂金額：");
+            if (priceInput && !isNaN(priceInput)) {
+                const pStr = String(parseInt(priceInput));
+                if (!data[pStr]) {
+                    data[pStr] = 0;
+                    order.push(pStr); // 新金額排在陣列最後面
+                    renderRows();
+                    updateUI();
+                    
+                    // 自動滾動到最下方新產生的項目並增加一盤
+                    const badge = document.getElementById(`badge-${pStr}`);
+                    if(badge) {
+                         badge.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                         change(pStr, 1);
+                    }
+                } else {
+                    // 已存在則直接閃爍該行並增加
+                    const badge = document.getElementById(`badge-${pStr}`);
+                    if(badge) {
+                         badge.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                         change(pStr, 1);
+                    }
+                }
+            }
+        }
+
+        function updateUI() {
+            let totalAmount = 0;
+            let summaryHTML = "";
+            let hasPlates = false;
+            
+            // 匯總顯示時可以維持特定邏輯，但這裡我們根據 order 順序來顯示標籤
+            order.forEach(price => {
+                const count = data[price];
+                totalAmount += (parseInt(price) * count);
+                
+                // 更新按鈕上的氣泡
+                const badge = document.getElementById(`badge-${price}`);
+                if (badge) {
+                    badge.innerText = count;
+                    badge.classList.toggle('hidden', count <= 0);
+                }
+
+                if (count > 0) {
+                    hasPlates = true;
+                    const plateColor = defaultPrices.includes(price) ? `var(--plate-${price})` : '#78716c';
+                    const textColor = (price === "100" || price === "40" || price === "50" || price === "70") ? "white" : "inherit";
+                    
+                    summaryHTML += `
+                        <div class="bg-[#f7f3ed] px-3 py-1.5 rounded-xl flex items-center space-x-2 border border-[#e7e0d7] shadow-sm">
+                            <span class="text-[#8c857d] font-bold text-[10px]">$${price}</span>
+                            <span class="w-px h-3 bg-[#e7e0d7]"></span>
+                            <span class="text-xs font-black px-2 py-0.5 rounded-md" style="background-color: ${plateColor}; color: ${textColor};">${count} 盤</span>
+                        </div>
+                    `;
+                }
+            });
+
+            document.getElementById('totalAmount').innerText = `$ ${totalAmount.toLocaleString()}`;
+            plateSummary.innerHTML = hasPlates ? summaryHTML : '<span class="text-[#8c857d]/50 text-sm italic tracking-tight">尚未點餐</span>';
+        }
+
+        function generateQR() {
+            const container = document.getElementById('qrcodeContainer');
+            const qrDiv = document.getElementById('qrcode');
+            qrDiv.innerHTML = "";
+            container.classList.remove('hidden');
+
+            const filterData = {};
+            for(let p in data) if(data[p] > 0) filterData[p] = data[p];
+            
+            const payload = JSON.stringify(filterData);
+            if(Object.keys(filterData).length === 0) {
+                qrDiv.innerHTML = "<p class='py-10 text-slate-400'>請先點餐再產生</p>";
+                return;
+            }
+
+            // 優化 QR Code 靈敏度：調降容錯率以減少顆粒度 (M 或 Q 是識別率最平衡的等級)
+            new QRCode(qrDiv, {
+                text: payload,
+                width: 256, // 增加解析度
+                height: 256,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.Q // 調降至 Q 等級，減少點的密度，更易於對焦
+            });
+            
+            // 自動滾動並確保靜區充足
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        let html5QrCode;
+        function toggleScanner() {
+            const modal = document.getElementById('scannerModal');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                html5QrCode = new Html5Qrcode("reader");
+                
+                // 優化掃描偵測：增加掃描頻率與對齊框大小
+                const config = { 
+                    fps: 20, 
+                    qrbox: function(viewfinderWidth, viewfinderHeight) {
+                        let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                        let edgeSize = Math.floor(minEdge * 0.7);
+                        return { width: edgeSize, height: edgeSize };
+                    },
+                    aspectRatio: 1.0
+                };
+
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    (decodedText) => {
+                        handleScanSuccess(decodedText);
+                        toggleScanner();
+                    }
+                ).catch((err) => {
+                    console.error("無法開啟相機", err);
+                    modal.classList.add('hidden');
+                });
+            } else {
+                modal.classList.add('hidden');
+                if(html5QrCode) {
+                    html5QrCode.stop().then(() => {
+                        html5QrCode.clear();
+                    }).catch(() => {});
+                }
+            }
+        }
+
+        function handleScanSuccess(jsonStr) {
+            try {
+                const friendData = JSON.parse(jsonStr);
+                const resultDiv = document.getElementById('scanResult');
+                const detailDiv = document.getElementById('scanDetail');
+                const totalDiv = document.getElementById('scanTotal');
+                
+                resultDiv.classList.remove('hidden');
+                detailDiv.innerHTML = "";
+                
+                let fTotal = 0;
+                let fCount = 0;
+                
+                for(let p in friendData) {
+                    const c = friendData[p];
+                    const amt = parseInt(p) * c;
+                    fTotal += amt;
+                    fCount += c;
+                    detailDiv.innerHTML += `
+                        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-[#e7e0d7]">
+                            <span class="text-[#57534e]">$${p} × ${c} 盤</span>
+                            <span class="font-bold text-[#2d2a26]">$${amt}</span>
+                        </div>`;
+                }
+                
+                totalDiv.innerHTML = `
+                    <div class="flex justify-between items-center text-2xl">
+                        <span class="text-sm text-[#8c857d] font-bold">小計 (${fCount} 盤)</span>
+                        <span>$${fTotal.toLocaleString()}</span>
+                    </div>
+                `;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch(e) {
+                alert("QR格式不符");
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
