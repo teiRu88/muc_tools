@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SUSHI 014</title>
+    <title>SUSHI_015</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -148,15 +148,9 @@
         <div class="glass-card rounded-[2.5rem] p-8 mb-8 text-center relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#b91c1c]/20 to-transparent"></div>
             
-            <div class="mb-4">
+            <div class="mb-2">
                 <p class="text-[#8c857d] text-[10px] font-bold uppercase tracking-[0.3em] mb-2">本機目前累計</p>
                 <p id="totalAmount" class="text-6xl font-black text-[#2d2a26] tracking-tighter">$ 0</p>
-            </div>
-            
-            <div class="pt-6 border-t border-dashed border-[#e7e0d7]">
-                <div id="plateSummary" class="flex flex-wrap justify-center gap-2">
-                    <span class="text-[#8c857d]/50 text-sm italic">尚無點餐紀錄</span>
-                </div>
             </div>
         </div>
 
@@ -219,7 +213,7 @@
         const defaultPrices = ["30", "40", "50", "60", "70", "80", "100"];
         let data = {};
         let order = [];
-        let scannedFriends = []; // 存儲多個朋友的資料清單
+        let scannedFriends = []; 
 
         defaultPrices.forEach(p => {
             data[p] = 0;
@@ -227,7 +221,6 @@
         });
 
         const itemContainer = document.getElementById('itemContainer');
-        const plateSummary = document.getElementById('plateSummary');
 
         function init() {
             renderRows();
@@ -242,15 +235,19 @@
         function createRow(price) {
             const div = document.createElement('div');
             div.className = "glass-card flex items-center justify-between p-4 pl-6 rounded-[2.5rem] transition-all";
-            div.id = `row-${price}`; // 加入 ID 方便尋找
+            div.id = `row-${price}`;
             const colorClass = defaultPrices.includes(price) ? `color-${price}` : 'color-custom';
             
             div.innerHTML = `
-                <div class="flex flex-col">
-                    <span class="text-[#8c857d] text-[10px] font-black uppercase tracking-[0.2em]">UnitPrice</span>
-                    <div class="font-black text-3xl text-[#2d2a26] italic">$${price}</div>
+                <div class="flex items-center flex-1">
+                    <div class="flex flex-col min-w-[65px]">
+                        <span class="text-[#8c857d] text-[9px] font-black uppercase tracking-[0.2em] opacity-80">UnitPrice</span>
+                        <div class="font-black text-3xl text-[#2d2a26] italic -mt-1">$${price}</div>
+                    </div>
+                    <!-- 盤數摘要：字體極大化與對比強化 -->
+                    <div id="plate-summary-${price}" class="ml-4 flex items-center transition-all duration-300"></div>
                 </div>
-                <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-4">
                     <button onclick="change('${price}', -1)" class="minus-btn">－</button>
                     <div class="plate-btn" onclick="change('${price}', 1)">
                         <div class="plate-shadow"></div>
@@ -278,7 +275,6 @@
             if (window.navigator.vibrate) window.navigator.vibrate(delta > 0 ? 30 : 15);
             updateUI();
             
-            // 當掃描者自己的數據變動時，如果累計區域是開啟的，則同步更新
             if (scannedFriends.length > 0) {
                 renderScannedResults();
             }
@@ -287,8 +283,7 @@
         function addNewRow() {
             let priceInput = prompt("請輸入自訂金額：");
             
-            // 限制：只能輸入正整數數字
-            if (priceInput === null) return; // 使用者點取消
+            if (priceInput === null) return; 
             priceInput = priceInput.trim();
             if (priceInput === "" || isNaN(priceInput) || !/^\d+$/.test(priceInput)) {
                 alert("錯誤：請輸入有效的數字金額。");
@@ -297,19 +292,15 @@
 
             const pStr = String(parseInt(priceInput));
             
-            // 解決 BUG：如果金額已經存在（不論是預設還是已新增），就不重複建立列
             if (data.hasOwnProperty(pStr)) {
                 const targetRow = document.getElementById(`row-${pStr}`);
                 if (targetRow) {
                     targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // 自動加 1 盤
                     change(pStr, 1);
                 }
             } else {
-                // 新金額，建立新行
                 data[pStr] = 0;
                 order.push(pStr);
-                // 依金額重新排序 order (可選，讓畫面更整齊)
                 order.sort((a, b) => parseInt(a) - parseInt(b));
                 renderRows();
                 updateUI();
@@ -324,32 +315,39 @@
 
         function updateUI() {
             let totalAmount = 0;
-            let summaryHTML = "";
-            let hasPlates = false;
             
             order.forEach(price => {
                 const count = data[price];
                 totalAmount += (parseInt(price) * count);
+                
+                // 更新該列右側的盤數方塊：極致易讀性優化
+                const summaryArea = document.getElementById(`plate-summary-${price}`);
+                if (summaryArea) {
+                    if (count > 0) {
+                        const plateColor = defaultPrices.includes(price) ? `var(--plate-${price})` : '#78716c';
+                        // 判斷是否為深色盤子，如果是則使用白色文字
+                        const textColor = (price === "100" || price === "40" || price === "50" || price === "70") ? "white" : "inherit";
+                        
+                        summaryArea.innerHTML = `
+                            <div class="px-5 py-2.5 rounded-[1.5rem] flex items-center border-2 shadow-md transition-all scale-105 origin-left" 
+                                 style="background-color: ${plateColor}15; border-color: ${plateColor}50;">
+                                <span class="text-2xl font-black tracking-tighter" style="color: ${plateColor === 'var(--plate-100)' ? '#2d2a26' : plateColor};">
+                                    ${count} <span class="text-sm font-bold opacity-60 ml-0.5">盤</span>
+                                </span>
+                            </div>
+                        `;
+                    } else {
+                        summaryArea.innerHTML = "";
+                    }
+                }
+
                 const badge = document.getElementById(`badge-${price}`);
                 if (badge) {
                     badge.innerText = count;
                     badge.classList.toggle('hidden', count <= 0);
                 }
-                if (count > 0) {
-                    hasPlates = true;
-                    const plateColor = defaultPrices.includes(price) ? `var(--plate-${price})` : '#78716c';
-                    const textColor = (price === "100" || price === "40" || price === "50" || price === "70") ? "white" : "inherit";
-                    summaryHTML += `
-                        <div class="bg-[#f7f3ed] px-3 py-1.5 rounded-xl flex items-center space-x-2 border border-[#e7e0d7] shadow-sm">
-                            <span class="text-[#8c857d] font-bold text-[10px]">$${price}</span>
-                            <span class="w-px h-3 bg-[#e7e0d7]"></span>
-                            <span class="text-xs font-black px-2 py-0.5 rounded-md" style="background-color: ${plateColor}; color: ${textColor};">${count} 盤</span>
-                        </div>
-                    `;
-                }
             });
             document.getElementById('totalAmount').innerText = `$ ${totalAmount.toLocaleString()}`;
-            plateSummary.innerHTML = hasPlates ? summaryHTML : '<span class="text-[#8c857d]/50 text-sm italic tracking-tight">尚未點餐</span>';
         }
 
         function generateQR() {
@@ -418,11 +416,9 @@
             const detailDiv = document.getElementById('individualDetails');
             const totalDiv = document.getElementById('scanTotal');
             
-            // 掃描者本人的現有數據（過濾掉 0 盤的項目）
             const myData = {};
             for(let p in data) if(data[p] > 0) myData[p] = data[p];
 
-            // 如果既沒有掃描朋友，掃描者自己也沒點餐，則不顯示
             if (scannedFriends.length === 0 && Object.keys(myData).length === 0) {
                 resultDiv.classList.add('hidden');
                 return;
@@ -435,7 +431,6 @@
             let grandTotal = 0;
             const combinedCounts = {}; 
 
-            // 處理掃描者本人 (朋友 #0)
             const allParticipants = [myData, ...scannedFriends];
 
             allParticipants.forEach((personData, index) => {
@@ -458,7 +453,6 @@
                     `;
                 }
 
-                // 如果這個人有點餐才顯示卡片
                 if (personTotal > 0) {
                     grandTotal += personTotal;
                     detailDiv.innerHTML += `
@@ -494,7 +488,6 @@
                 <div class="font-black">$ ${grandTotal.toLocaleString()}</div>
             `;
             
-            // 只有在掃描動作後才自動滾動，避免手動加減盤子時畫面一直跳
             if (scannedFriends.length > 0 && !resultDiv.dataset.scrolled) {
                 window.scrollTo({ top: resultDiv.offsetTop - 100, behavior: 'smooth' });
                 resultDiv.dataset.scrolled = "true";
