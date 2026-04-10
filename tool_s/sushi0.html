@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SUSHI_015</title>
+    <title>sushi_016</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -111,22 +111,21 @@
         .count-update { animation: countJump 0.2s ease-out; }
 
         .minus-btn {
-            width: 44px;
-            height: 44px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             background: #e7e0d7;
             color: #8c857d;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
             transition: all 0.2s;
             border: 1px solid rgba(0,0,0,0.05);
         }
         .minus-btn:active { background: #dcd3c8; transform: scale(0.9); }
 
-        /* 相機遮罩覆寫 */
         #reader__scan_region {
             background: white !important;
         }
@@ -136,7 +135,7 @@
 
     <header class="bg-[#2d2a26] text-[#f7f3ed] p-5 sticky top-0 z-50 shadow-xl flex justify-between items-center border-b border-[#b91c1c]/30">
         <h1 class="text-xl font-black tracking-[0.2em] flex items-center">
-            <span class="mr-2">🍣</span> SUSHI 食べたい
+            <span class="mr-2">🍣</span> スシヤローSUSHIYARO
         </h1>
         <button onclick="toggleScanner()" class="bg-[#b91c1c] hover:bg-[#991b1b] text-white px-5 py-2 rounded-full text-xs font-bold tracking-widest transition-all active:scale-95 shadow-lg">
             開始掃描
@@ -144,20 +143,16 @@
     </header>
 
     <main class="p-6 max-w-md mx-auto">
-        <!-- 總計儀表板 -->
         <div class="glass-card rounded-[2.5rem] p-8 mb-8 text-center relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#b91c1c]/20 to-transparent"></div>
-            
             <div class="mb-2">
                 <p class="text-[#8c857d] text-[10px] font-bold uppercase tracking-[0.3em] mb-2">本機目前累計</p>
                 <p id="totalAmount" class="text-6xl font-black text-[#2d2a26] tracking-tighter">$ 0</p>
             </div>
         </div>
 
-        <!-- 點餐清單區 -->
         <div id="itemContainer" class="space-y-4"></div>
 
-        <!-- 底部固定按鈕 -->
         <div class="fixed bottom-0 left-0 w-full p-4 bg-gradient-to-t from-[#f7f3ed] via-[#f7f3ed] to-transparent pointer-events-none">
             <div class="max-w-md mx-auto flex gap-3 pointer-events-auto">
                 <button onclick="addNewRow()" class="flex-1 py-4 bg-[#e7e0d7] text-[#57534e] rounded-2xl font-bold active:scale-95 transition-all tracking-widest text-sm shadow-md">
@@ -169,14 +164,12 @@
             </div>
         </div>
 
-        <!-- QR Code 顯示區域 -->
         <div id="qrcodeContainer" class="hidden mt-6 p-8 bg-white rounded-[2rem] text-center shadow-2xl border border-[#e7e0d7]">
             <p class="mb-5 font-bold text-[#2d2a26] tracking-widest">讓朋友掃描你的數據</p>
             <div id="qrcode" class="flex justify-center mb-8 p-4 bg-white ring-1 ring-[#e7e0d7] rounded-2xl"></div>
             <button onclick="this.parentElement.classList.add('hidden')" class="w-full py-2 text-[#8c857d] font-bold">關閉</button>
         </div>
 
-        <!-- 多人累計結果區域 -->
         <div id="scanResult" class="hidden mt-6 p-8 bg-[#fdfaf3] border border-[#e9e3d0] rounded-[2rem] shadow-xl">
             <div class="flex justify-between items-center border-b border-[#e9e3d0] pb-3 mb-6">
                 <h3 class="font-black text-xl text-[#454138] flex items-center">
@@ -184,13 +177,8 @@
                 </h3>
                 <button onclick="clearScannedRecords()" class="text-xs text-red-600 font-bold border border-red-200 px-2 py-1 rounded-md">清空紀錄</button>
             </div>
-
-            <!-- 分類加總顯示 -->
             <div id="combinedSummary" class="mb-8 space-y-2"></div>
-            
             <div id="scanTotal" class="text-3xl font-black text-[#b91c1c] mb-8 p-4 bg-[#b91c1c]/5 rounded-2xl text-center"></div>
-
-            <!-- 個人細項列表 -->
             <div class="space-y-6">
                 <h4 class="text-xs font-black text-[#8c857d] uppercase tracking-widest border-l-4 border-[#b91c1c] pl-2">各別朋友細項 (含掃描者)</h4>
                 <div id="individualDetails" class="space-y-4"></div>
@@ -198,7 +186,6 @@
         </div>
     </main>
 
-    <!-- 掃描 Modal -->
     <div id="scannerModal" class="hidden fixed inset-0 bg-[#2d2a26] z-[60] flex flex-col">
         <div id="reader" class="w-full flex-1"></div>
         <div class="p-8 bg-[#2d2a26] flex flex-col gap-4">
@@ -234,28 +221,22 @@
 
         function createRow(price) {
             const div = document.createElement('div');
-            div.className = "glass-card flex items-center justify-between p-4 pl-6 rounded-[2.5rem] transition-all";
+            // 核心調整：改用 justify-center 並配合 gap-5 實現緊湊的置中收束
+            div.className = "glass-card flex items-center justify-center p-3 px-4 rounded-[2.5rem] transition-all gap-5";
             div.id = `row-${price}`;
             const colorClass = defaultPrices.includes(price) ? `color-${price}` : 'color-custom';
             
             div.innerHTML = `
-                <div class="flex items-center flex-1">
-                    <div class="flex flex-col min-w-[65px]">
-                        <span class="text-[#8c857d] text-[9px] font-black uppercase tracking-[0.2em] opacity-80">UnitPrice</span>
-                        <div class="font-black text-3xl text-[#2d2a26] italic -mt-1">$${price}</div>
-                    </div>
-                    <!-- 盤數摘要：字體極大化與對比強化 -->
-                    <div id="plate-summary-${price}" class="ml-4 flex items-center transition-all duration-300"></div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <button onclick="change('${price}', -1)" class="minus-btn">－</button>
-                    <div class="plate-btn" onclick="change('${price}', 1)">
-                        <div class="plate-shadow"></div>
-                        <div id="badge-${price}" class="count-badge hidden">0</div>
-                        <div class="plate-surface ${colorClass}">
-                            <span class="text-[10px] opacity-60">NT.</span>
-                            <span class="text-2xl">${price}</span>
-                        </div>
+                <button onclick="change('${price}', -1)" class="minus-btn flex-shrink-0">－</button>
+                
+                <div id="plate-summary-${price}" class="min-w-[80px] flex justify-center transition-all duration-300"></div>
+                
+                <div class="plate-btn flex-shrink-0" onclick="change('${price}', 1)">
+                    <div class="plate-shadow"></div>
+                    <div id="badge-${price}" class="count-badge hidden">0</div>
+                    <div class="plate-surface ${colorClass}">
+                        <span class="text-[10px] opacity-60">NT.</span>
+                        <span class="text-2xl">${price}</span>
                     </div>
                 </div>
             `;
@@ -282,16 +263,13 @@
 
         function addNewRow() {
             let priceInput = prompt("請輸入自訂金額：");
-            
             if (priceInput === null) return; 
             priceInput = priceInput.trim();
             if (priceInput === "" || isNaN(priceInput) || !/^\d+$/.test(priceInput)) {
                 alert("錯誤：請輸入有效的數字金額。");
                 return;
             }
-
             const pStr = String(parseInt(priceInput));
-            
             if (data.hasOwnProperty(pStr)) {
                 const targetRow = document.getElementById(`row-${pStr}`);
                 if (targetRow) {
@@ -304,7 +282,6 @@
                 order.sort((a, b) => parseInt(a) - parseInt(b));
                 renderRows();
                 updateUI();
-                
                 const targetRow = document.getElementById(`row-${pStr}`);
                 if (targetRow) {
                     targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -315,32 +292,30 @@
 
         function updateUI() {
             let totalAmount = 0;
-            
             order.forEach(price => {
                 const count = data[price];
                 totalAmount += (parseInt(price) * count);
-                
-                // 更新該列右側的盤數方塊：極致易讀性優化
                 const summaryArea = document.getElementById(`plate-summary-${price}`);
                 if (summaryArea) {
                     if (count > 0) {
                         const plateColor = defaultPrices.includes(price) ? `var(--plate-${price})` : '#78716c';
-                        // 判斷是否為深色盤子，如果是則使用白色文字
-                        const textColor = (price === "100" || price === "40" || price === "50" || price === "70") ? "white" : "inherit";
-                        
+                        // 盤數區維持 2xl 字體大小
                         summaryArea.innerHTML = `
-                            <div class="px-5 py-2.5 rounded-[1.5rem] flex items-center border-2 shadow-md transition-all scale-105 origin-left" 
+                            <div class="px-3 py-2 rounded-[1.2rem] flex items-center border-2 shadow-sm transition-all scale-100" 
                                  style="background-color: ${plateColor}15; border-color: ${plateColor}50;">
-                                <span class="text-2xl font-black tracking-tighter" style="color: ${plateColor === 'var(--plate-100)' ? '#2d2a26' : plateColor};">
-                                    ${count} <span class="text-sm font-bold opacity-60 ml-0.5">盤</span>
+                                <span class="text-3xl font-black tracking-tighter" style="color: ${plateColor === 'var(--plate-100)' ? '#2d2a26' : plateColor};">
+                                    ${count}<span class="text-base font-bold opacity-60 ml-0.5">盤</span>
                                 </span>
                             </div>
                         `;
                     } else {
-                        summaryArea.innerHTML = "";
+                        summaryArea.innerHTML = `
+                             <div class="px-3 py-2 rounded-[1.2rem] flex items-center border border-dashed border-[#e7e0d7] opacity-20">
+                                <span class="text-xl font-black text-[#8c857d]">0<span class="text-[10px]">盤</span></span>
+                            </div>
+                        `;
                     }
                 }
-
                 const badge = document.getElementById(`badge-${price}`);
                 if (badge) {
                     badge.innerText = count;
@@ -415,36 +390,27 @@
             const combinedDiv = document.getElementById('combinedSummary');
             const detailDiv = document.getElementById('individualDetails');
             const totalDiv = document.getElementById('scanTotal');
-            
             const myData = {};
             for(let p in data) if(data[p] > 0) myData[p] = data[p];
-
             if (scannedFriends.length === 0 && Object.keys(myData).length === 0) {
                 resultDiv.classList.add('hidden');
                 return;
             }
-
             resultDiv.classList.remove('hidden');
             combinedDiv.innerHTML = "";
             detailDiv.innerHTML = "";
-
             let grandTotal = 0;
             const combinedCounts = {}; 
-
             const allParticipants = [myData, ...scannedFriends];
-
             allParticipants.forEach((personData, index) => {
                 let personTotal = 0;
                 let personItemsHTML = "";
                 const isMe = (index === 0);
-
                 for(let price in personData) {
                     const count = personData[price];
                     const amount = parseInt(price) * count;
                     personTotal += amount;
-                    
                     combinedCounts[price] = (combinedCounts[price] || 0) + count;
-                    
                     personItemsHTML += `
                         <div class="flex justify-between text-sm py-1 border-b border-gray-50 last:border-0">
                             <span class="text-gray-500">$${price} × ${count} 盤</span>
@@ -452,7 +418,6 @@
                         </div>
                     `;
                 }
-
                 if (personTotal > 0) {
                     grandTotal += personTotal;
                     detailDiv.innerHTML += `
@@ -471,7 +436,6 @@
                     `;
                 }
             });
-
             const sortedPrices = Object.keys(combinedCounts).sort((a,b) => parseInt(a) - parseInt(b));
             sortedPrices.forEach(price => {
                 const count = combinedCounts[price];
@@ -482,12 +446,10 @@
                     </div>
                 `;
             });
-
             totalDiv.innerHTML = `
                 <div class="text-xs uppercase tracking-[0.2em] text-[#8c857d] mb-1">所有人合計總額 (含自己)</div>
                 <div class="font-black">$ ${grandTotal.toLocaleString()}</div>
             `;
-            
             if (scannedFriends.length > 0 && !resultDiv.dataset.scrolled) {
                 window.scrollTo({ top: resultDiv.offsetTop - 100, behavior: 'smooth' });
                 resultDiv.dataset.scrolled = "true";
@@ -502,7 +464,6 @@
                 renderScannedResults();
             }
         }
-
         init();
     </script>
 </body>
