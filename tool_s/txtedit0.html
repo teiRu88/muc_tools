@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡易 TXT 編輯器</title>
+    <style>
+        body { font-family: sans-serif; padding: 15px; margin: 0; }
+        .btn-group { margin-bottom: 10px; display: flex; gap: 10px; }
+        textarea { width: 100%; height: 70vh; font-size: 16px; padding: 10px; box-sizing: border-box; }
+        input[type="file"] { display: none; }
+        label, button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="btn-group">
+        <!-- 隱藏原生檔案按鈕，用 label 美化 -->
+        <label for="fileInput">開啟檔案</label>
+        <input type="file" id="fileInput" accept=".txt">
+        <button id="saveBtn">儲存檔案</button>
+    </div>
+
+    <textarea id="editor" placeholder="在此輸入文字或開啟 TXT 檔案..."></textarea>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const editor = document.getElementById('editor');
+        const saveBtn = document.getElementById('saveBtn');
+
+        // 1. 讀取檔案功能
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                editor.value = evt.target.result; // 將文字放入編輯區
+            };
+            reader.readAsText(file, 'UTF-8'); // 支援中文編碼
+        });
+
+        // 2. 儲存檔案功能
+        saveBtn.addEventListener('click', function() {
+            const text = editor.value;
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            
+            link.href = URL.createObjectURL(blob);
+            link.download = 'edited_file.txt'; // 預設儲存檔名
+            link.click(); // 觸發下載
+            URL.revokeObjectURL(link.href); // 釋放記憶體
+        });
+    </script>
+
+</body>
+</html>
