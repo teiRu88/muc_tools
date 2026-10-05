@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>油資補助記錄</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Dynamic PWA Manifest & iOS setup -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="油資記錄">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3202/3202926.png">
+
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+
+        /* Enhanced tactile buttons with solid boundaries and visual feedback */
+        .btn-keypad-num {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background-color: #ffffff;
+            color: #1e293b;
+            border: 2px solid #cbd5e1;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.08s ease-in-out;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        .btn-keypad-num:active {
+            background-color: #4f46e5;
+            color: #ffffff;
+            border-color: #3730a3;
+            transform: scale(0.96);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-keypad-action {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            transition: all 0.08s ease-in-out;
+        }
+        .btn-keypad-action:active {
+            transform: scale(0.96);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans antialiased flex flex-col selection:bg-blue-100" ontouchstart="">
+
+    <!-- Header / Navbar -->
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg sticky top-0 z-20">
+        <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid font-bold fa-gas-pump text-2xl text-amber-300"></i>
+                <h1 class="text-xl font-bold tracking-wide">油資補助記錄</h1>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="pwaInstallBtn" onclick="installPWA()" class="hidden bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold text-xs px-3 py-1.5 rounded-full shadow transition-transform active:scale-95 flex items-center gap-1">
+                    <i class="fa-solid fa-download"></i> 安裝 App
+                </button>
+                <button onclick="openModal('backupModal')" class="p-2 hover:bg-white/10 rounded-full transition" title="備份與還原">
+                    <i class="fa-solid fa-database text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 text-white text-sm font-medium px-4 py-2.5 rounded-2xl shadow-xl transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-2 flex items-center gap-2">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-amber-400"></i>
+        <span id="toastMessage">訊息提示</span>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="max-w-md mx-auto w-full flex-1 p-3 pb-24 flex flex-col gap-4">
+        
+        <!-- Month Navigation & Calendar Card -->
+        <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-200">
+            <!-- Calendar Navigation Header -->
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 active:bg-slate-200 text-slate-600">
+                    <i class="fa-solid fa-chevron-left text-lg"></i>
+                </button>
+                <div class="text-center">
+                    <h2 id="calendarTitle" class="text-xl font-bold text-slate-800">2026 年 10 月</h2>
+                    <p id="monthTotalBadge" class="text-xs font-medium text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full inline-block mt-0.5">本月合計: 0 km</p>
+                </div>
+                <button onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 active:bg-slate-200 text-slate-600">
+                    <i class="fa-solid fa-chevron-right text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Days of Week Header -->
+            <div class="grid grid-cols-7 text-center font-bold text-xs text-slate-400 mb-2">
+                <div class="text-rose-500">日</div>
+                <div>一</div>
+                <div>二</div>
+                <div>三</div>
+                <div>四</div>
+                <div>五</div>
+                <div class="text-emerald-600">六</div>
+            </div>
+
+            <!-- Calendar Days Grid -->
+            <div id="calendarGrid" class="grid grid-cols-7 gap-1">
+                <!-- Dynamically populated JS -->
+            </div>
+        </div>
+
+        <!-- Range Query Shortcut Banner -->
+        <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-4 text-white shadow-md flex justify-between items-center">
+            <div>
+                <div class="text-xs text-indigo-100 font-medium">需要申報或統計補助？</div>
+                <div class="text-lg font-bold">區間里程查詢統計</div>
+            </div>
+            <button onclick="openModal('searchModal')" class="bg-white text-indigo-700 hover:bg-indigo-50 active:scale-95 font-bold px-4 py-2 rounded-2xl shadow-sm text-sm transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-magnifying-glass"></i> 點我查詢
+            </button>
+        </div>
+
+        <!-- Recent Records Preview -->
+        <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> 近期紀錄
+                </h3>
+                <span class="text-xs text-slate-400">點選日曆可新增或修改</span>
+            </div>
+            <div id="recentRecordsList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <!-- Dynamically populated JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL 1: Input Modal with Custom Keypad -->
+    <div id="inputModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl animate-in slide-in-from-bottom duration-200">
+            
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div>
+                    <h3 id="inputModalDate" class="text-lg font-bold text-slate-800">2026-10-06</h3>
+                    <p class="text-xs text-slate-400">輸入當天公務前後儀表板里程數</p>
+                </div>
+                <button onclick="closeModal('inputModal')" class="text-slate-400 hover:text-slate-600 p-2 rounded-full">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Active Field Tabs / Selector -->
+            <div class="grid grid-cols-2 gap-2 my-4">
+                <button id="tabStart" onclick="switchField('start')" class="py-3 px-3 rounded-2xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-left transition-all relative shadow-sm">
+                    <span class="text-xs text-indigo-500 block">1. 上班前里程</span>
+                    <span id="displayStart" class="text-xl font-black font-mono">0</span>
+                    <i id="iconStart" class="fa-solid fa-circle-dot absolute right-3 top-1/2 -translate-y-1/2 text-indigo-600"></i>
+                </button>
+
+                <button id="tabEnd" onclick="switchField('end')" class="py-3 px-3 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-bold text-left transition-all relative shadow-sm">
+                    <span class="text-xs text-slate-400 block">2. 下班後里程</span>
+                    <span id="displayEnd" class="text-xl font-black font-mono">0</span>
+                    <i id="iconEnd" class="fa-solid fa-circle absolute right-3 top-1/2 -translate-y-1/2 text-slate-300"></i>
+                </button>
+            </div>
+
+            <!-- Calculation Output Card -->
+            <div class="bg-slate-800 text-white rounded-2xl p-3 mb-4 flex justify-between items-center shadow-inner">
+                <span class="text-sm font-medium text-slate-300">今日小計公里數：</span>
+                <span id="displayDiff" class="text-2xl font-black font-mono text-amber-400">0 km</span>
+            </div>
+
+            <!-- High-contrast Large Touch Keypad with clear visual borders -->
+            <div class="grid grid-cols-3 gap-2.5 mb-4 p-1 bg-slate-100 rounded-2xl border border-slate-200">
+                <button onclick="keypadInput('1')" class="btn-keypad-num h-16 rounded-xl text-3xl font-black flex items-center justify-center">1</button>
+                <button onclick="keypadInput('2')" class="btn-keypad-num h-16 rounded-xl text-3xl font-black flex items-center justify-center">2</button>
+                <button onclick="keypadInput('3')" class="btn-keypad-num h-16 rounded-xl text-3xl font-black flex items-center justify-center">3</button>
+                <button onclick="keypadInput('4')" class="btn-keypad-num h-16 rounded-xl text-3xl font-black flex items-center justify-center">4</button>
+                <button onclick="keypadInput('5')" class="btn-keypad-num h-16 rounded-xl text-3xl font-black flex items-center justify-center">5</button>
+                <button onclick="keypadInput('6')" class="btn-keypad-num h-16 rounded-xl text-3xl font-black flex items-center justify-center">6</button>
+                <button onclick="keypadInput('7')" class="btn-keypad-num h-16 rounded-xl text-3xl font-black flex items-center justify-center">7</button>
+                <button onclick="keypadInput('8')" class="btn-keypad-num h-16 rounded-xl text-3xl font-black flex items-center justify-center">8</button>
+                <button onclick="keypadInput('9')" class="btn-keypad-num h-16 rounded-xl text-3xl font-black flex items-center justify-center">9</button>
+                
+                <!-- Action Key: Backspace -->
+                <button onclick="keypadBackspace()" class="btn-keypad-action h-16 rounded-xl text-2xl font-bold bg-amber-100 text-amber-900 hover:bg-amber-200 active:bg-amber-500 active:text-white border-2 border-amber-300 shadow-sm flex items-center justify-center">
+                    <i class="fa-solid fa-backspace"></i>
+                </button>
+                
+                <!-- Zero Key -->
+                <button onclick="keypadInput('0')" class="btn-keypad-num h-16 rounded-xl text-3xl font-black flex items-center justify-center">0</button>
+                
+                <!-- Action Key: Clear -->
+                <button onclick="keypadClear()" class="btn-keypad-action h-16 rounded-xl text-2xl font-bold bg-rose-100 text-rose-800 hover:bg-rose-200 active:bg-rose-600 active:text-white border-2 border-rose-300 shadow-sm flex items-center justify-center">
+                    C
+                </button>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-2">
+                <button onclick="deleteRecord()" id="btnDelete" class="flex-1 py-3 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 font-bold rounded-2xl transition">
+                    刪除記錄
+                </button>
+                <button onclick="saveRecord()" class="flex-[2] py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200 transition">
+                    完成儲存
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL 2: Range Search & Query Modal -->
+    <div id="searchModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl max-h-[90vh] flex flex-col">
+            
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-range text-indigo-600"></i> 區間里程查詢
+                </h3>
+                <button onclick="closeModal('searchModal')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 my-4">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">開始日期</label>
+                        <input type="date" id="searchStartDate" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">結束日期</label>
+                        <input type="date" id="searchEndDate" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <button onclick="executeSearch()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition">
+                    計算區間里程
+                </button>
+            </div>
+
+            <!-- Query Result Card -->
+            <div id="searchResultCard" class="hidden bg-slate-900 text-white rounded-2xl p-4 mb-3 flex justify-between items-center">
+                <div>
+                    <div class="text-xs text-slate-400">選定區間總計里程</div>
+                    <div id="searchTotalDistance" class="text-2xl font-black text-amber-400 font-mono">0 km</div>
+                </div>
+                <div id="searchDaysCount" class="text-xs bg-slate-800 px-3 py-1.5 rounded-full text-slate-300">共 0 天紀錄</div>
+            </div>
+
+            <!-- Search Details List -->
+            <div id="searchResultsList" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[120px]">
+                <div class="text-center text-slate-400 text-xs py-8">請選擇區間並點選「計算」</div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL 3: Backup & Restore Modal -->
+    <div id="backupModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl">
+            
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk text-indigo-600"></i> 資料備份與匯入
+                </h3>
+                <button onclick="closeModal('backupModal')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 my-4">
+                <!-- Export Card -->
+                <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
+                    <h4 class="font-bold text-indigo-900 text-sm mb-1">打包輸出備份 (JSON)</h4>
+                    <p class="text-xs text-indigo-600 mb-3">自動打包輸出 JSON 檔案，支援 iOS PWA 模式喚起系統選單（可選擇儲存至檔案或分享）。</p>
+                    <button onclick="exportData()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition flex justify-center items-center gap-2 text-sm">
+                        <i class="fa-solid fa-share-nodes"></i> 打包備份檔案並輸出
+                    </button>
+                </div>
+
+                <!-- Import Card -->
+                <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                    <h4 class="font-bold text-amber-900 text-sm mb-1">匯入備份 (JSON)</h4>
+                    <p class="text-xs text-amber-700 mb-3">選擇先前備份的 JSON 檔案進行還原（舊紀錄與新紀錄將自動合併）。</p>
+                    <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importData(event)">
+                    <button onclick="document.getElementById('importFileInput').click()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow transition flex justify-center items-center gap-2 text-sm">
+                        <i class="fa-solid fa-upload"></i> 選擇檔案並匯入
+                    </button>
+                </div>
+            </div>
+
+            <div class="text-center text-xs text-slate-400">
+                本系統資料全數安全儲存於您本地瀏覽器 (localStorage)。
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const STORAGE_KEY = 'YB_MILEAGE_RECORDS_V1';
+        let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        let currentDate = new Date(); // Controls Calendar View
+        let activeDateKey = null;     // YYYY-MM-DD
+        let activeField = 'start';    // 'start' or 'end'
+        let inputValues = { start: '0', end: '0' };
+        let deferredPrompt = null;
+
+        // --- App Initializer ---
+        window.addEventListener('DOMContentLoaded', () => {
+            renderCalendar();
+            renderRecentRecords();
+            setupPWA();
+        });
+
+        // Toast Helper
+        function showToast(message, icon = 'fa-circle-info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMessage.innerText = message;
+            toastIcon.className = `fa-solid ${icon} text-amber-400`;
+
+            toast.classList.remove('hidden', 'opacity-0', '-translate-y-2', 'pointer-events-none');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-2', 'pointer-events-none');
+            }, 2500);
+        }
+
+        // Save records to LocalStorage
+        function saveToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            renderCalendar();
+            renderRecentRecords();
+        }
+
+        // --- Calendar Logic ---
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth(); // 0-indexed
+
+            // Header Title
+            document.getElementById('calendarTitle').innerText = `${year} 年 ${month + 1} 月`;
+
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = '';
+
+            // Calculation dates
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            let monthTotal = 0;
+
+            // Empty cells before start of month
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = "h-20 bg-slate-50/50 rounded-2xl border border-dashed border-slate-100";
+                calendarGrid.appendChild(emptyCell);
+            }
+
+            // Fill Month Days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayString = String(day).padStart(2, '0');
+                const monthString = String(month + 1).padStart(2, '0');
+                const dateKey = `${year}-${monthString}-${dayString}`;
+                const rec = records[dateKey];
+
+                const cell = document.createElement('div');
+                const isToday = dateKey === todayStr;
+
+                let cellClasses = "h-20 rounded-2xl p-1.5 flex flex-col justify-between border transition-all cursor-pointer select-none relative overflow-hidden ";
+                if (isToday) {
+                    cellClasses += "border-indigo-500 bg-indigo-50/40 font-bold shadow-sm ";
+                } else {
+                    cellClasses += "border-slate-200 hover:border-indigo-300 bg-white hover:bg-slate-50 ";
+                }
+
+                let contentHtml = `<div class="flex justify-between items-center">
+                    <span class="text-xs ${isToday ? 'bg-indigo-600 text-white w-5 h-5 flex items-center justify-center rounded-full' : 'text-slate-700'}">${day}</span>
+                </div>`;
+
+                if (rec) {
+                    const diff = (parseFloat(rec.end) || 0) - (parseFloat(rec.start) || 0);
+                    const validDiff = diff > 0 ? diff : 0;
+                    monthTotal += validDiff;
+
+                    contentHtml += `
+                        <div class="mt-auto">
+                            <div class="text-[10px] text-slate-400 font-mono truncate leading-none">${rec.start}-${rec.end}</div>
+                            <div class="text-xs font-black text-indigo-700 font-mono mt-0.5 bg-indigo-100/70 border border-indigo-200 px-1 py-0.5 rounded text-center">
+                                ${validDiff} <span class="text-[9px] font-normal">km</span>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                cell.className = cellClasses;
+                cell.innerHTML = contentHtml;
+                cell.onclick = () => openInputModal(dateKey);
+
+                calendarGrid.appendChild(cell);
+            }
+
+            document.getElementById('monthTotalBadge').innerText = `本月合計: ${monthTotal} km`;
+        }
+
+        function changeMonth(delta) {
+            currentDate.setMonth(currentDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        // --- Input Modal & Keypad Handlers ---
+        function openInputModal(dateKey) {
+            activeDateKey = dateKey;
+            document.getElementById('inputModalDate').innerText = dateKey;
+
+            const existing = records[dateKey] || { start: '0', end: '0' };
+            inputValues = {
+                start: String(existing.start || '0'),
+                end: String(existing.end || '0')
+            };
+
+            document.getElementById('btnDelete').style.display = records[dateKey] ? 'block' : 'none';
+
+            switchField('start');
+            updateModalDisplays();
+            openModal('inputModal');
+        }
+
+        function switchField(field) {
+            activeField = field;
+            const tabStart = document.getElementById('tabStart');
+            const tabEnd = document.getElementById('tabEnd');
+            const iconStart = document.getElementById('iconStart');
+            const iconEnd = document.getElementById('iconEnd');
+
+            if (field === 'start') {
+                tabStart.className = "py-3 px-3 rounded-2xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-left transition-all relative shadow-sm";
+                tabEnd.className = "py-3 px-3 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-bold text-left transition-all relative shadow-sm";
+                iconStart.className = "fa-solid fa-circle-dot absolute right-3 top-1/2 -translate-y-1/2 text-indigo-600";
+                iconEnd.className = "fa-solid fa-circle absolute right-3 top-1/2 -translate-y-1/2 text-slate-300";
+            } else {
+                tabEnd.className = "py-3 px-3 rounded-2xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-left transition-all relative shadow-sm";
+                tabStart.className = "py-3 px-3 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-bold text-left transition-all relative shadow-sm";
+                iconEnd.className = "fa-solid fa-circle-dot absolute right-3 top-1/2 -translate-y-1/2 text-indigo-600";
+                iconStart.className = "fa-solid fa-circle absolute right-3 top-1/2 -translate-y-1/2 text-slate-300";
+            }
+        }
+
+        function keypadInput(num) {
+            let val = inputValues[activeField];
+            if (val === '0') {
+                val = num;
+            } else if (val.length < 8) {
+                val += num;
+            }
+            inputValues[activeField] = val;
+            updateModalDisplays();
+        }
+
+        function keypadBackspace() {
+            let val = inputValues[activeField];
+            if (val.length > 1) {
+                val = val.slice(0, -1);
+            } else {
+                val = '0';
+            }
+            inputValues[activeField] = val;
+            updateModalDisplays();
+        }
+
+        function keypadClear() {
+            inputValues[activeField] = '0';
+            updateModalDisplays();
+        }
+
+        function updateModalDisplays() {
+            document.getElementById('displayStart').innerText = inputValues.start;
+            document.getElementById('displayEnd').innerText = inputValues.end;
+
+            const startVal = parseFloat(inputValues.start) || 0;
+            const endVal = parseFloat(inputValues.end) || 0;
+            const diff = endVal - startVal;
+
+            const displayDiff = document.getElementById('displayDiff');
+            if (diff >= 0) {
+                displayDiff.innerText = `${diff} km`;
+                displayDiff.className = "text-2xl font-black font-mono text-amber-400";
+            } else {
+                displayDiff.innerText = `數字有誤`;
+                displayDiff.className = "text-xl font-bold font-mono text-rose-400";
+            }
+        }
+
+        function saveRecord() {
+            const startVal = parseFloat(inputValues.start) || 0;
+            const endVal = parseFloat(inputValues.end) || 0;
+
+            if (endVal < startVal) {
+                showToast('下班後里程數不能少於上班前里程數！', 'fa-triangle-exclamation');
+                return;
+            }
+
+            records[activeDateKey] = {
+                start: startVal,
+                end: endVal,
+                updatedAt: new Date().toISOString()
+            };
+
+            saveToStorage();
+            showToast('已成功儲存里程紀錄！', 'fa-circle-check');
+            closeModal('inputModal');
+        }
+
+        function deleteRecord() {
+            delete records[activeDateKey];
+            saveToStorage();
+            showToast('已成功刪除該日紀錄！', 'fa-trash-can');
+            closeModal('inputModal');
+        }
+
+        // --- Recent Records Rendering ---
+        function renderRecentRecords() {
+            const listEl = document.getElementById('recentRecordsList');
+            listEl.innerHTML = '';
+
+            const keys = Object.keys(records).sort().reverse().slice(0, 5);
+
+            if (keys.length === 0) {
+                listEl.innerHTML = `<div class="text-center text-slate-400 text-xs py-4">目前尚無里程記錄</div>`;
+                return;
+            }
+
+            keys.forEach(key => {
+                const rec = records[key];
+                const diff = (parseFloat(rec.end) || 0) - (parseFloat(rec.start) || 0);
+
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center p-2.5 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 transition cursor-pointer";
+                item.onclick = () => openInputModal(key);
+                item.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 bg-indigo-100 text-indigo-700 font-bold rounded-xl flex items-center justify-center text-xs border border-indigo-200">
+                            ${key.slice(8)}日
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-700">${key}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">起: ${rec.start} / 迄: ${rec.end}</div>
+                        </div>
+                    </div>
+                    <div class="text-sm font-black text-indigo-700 font-mono">
+                        +${diff} <span class="text-xs font-normal text-slate-500">km</span>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        // --- Range Query / Search Logic ---
+        function executeSearch() {
+            const startStr = document.getElementById('searchStartDate').value;
+            const endStr = document.getElementById('searchEndDate').value;
+
+            if (!startStr || !endStr) {
+                showToast('請選擇完整的開始與結束日期！', 'fa-calendar-xmark');
+                return;
+            }
+
+            if (startStr > endStr) {
+                showToast('開始日期不能晚於結束日期！', 'fa-calendar-xmark');
+                return;
+            }
+
+            const resultsList = document.getElementById('searchResultsList');
+            resultsList.innerHTML = '';
+
+            let totalKm = 0;
+            let countDays = 0;
+
+            const sortedKeys = Object.keys(records).sort();
+
+            sortedKeys.forEach(key => {
+                if (key >= startStr && key <= endStr) {
+                    const rec = records[key];
+                    const diff = (parseFloat(rec.end) || 0) - (parseFloat(rec.start) || 0);
+                    const validDiff = diff > 0 ? diff : 0;
+                    totalKm += validDiff;
+                    countDays++;
+
+                    const item = document.createElement('div');
+                    item.className = "flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-200";
+                    item.innerHTML = `
+                        <div>
+                            <div class="text-xs font-bold text-slate-800">${key}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">起 ${rec.start} km ➔ 迄 ${rec.end} km</div>
+                        </div>
+                        <div class="text-sm font-black text-indigo-600 font-mono">
+                            ${validDiff} km
+                        </div>
+                    `;
+                    resultsList.appendChild(item);
+                }
+            });
+
+            if (countDays === 0) {
+                resultsList.innerHTML = `<div class="text-center text-slate-400 text-xs py-8">此區間內無任何里程紀錄</div>`;
+            }
+
+            document.getElementById('searchResultCard').classList.remove('hidden');
+            document.getElementById('searchTotalDistance').innerText = `${totalKm} km`;
+            document.getElementById('searchDaysCount').innerText = `共 ${countDays} 天紀錄`;
+        }
+
+        // --- Backup & Restore Logic (Optimized for iOS PWA Web Share API) ---
+        async function exportData() {
+            const dateToday = new Date().toISOString().split('T')[0];
+            const filename = `YB_里程備份_${dateToday}.json`;
+            const jsonStr = JSON.stringify(records, null, 2);
+            
+            // Create a formal File Object
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const file = new File([blob], filename, { type: 'application/json' });
+
+            // Method A: Check for iOS Safari / Mobile native Web Share API with File sharing support
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        title: '油資補助記錄備份',
+                        text: '請選擇「儲存到檔案」或分享至其他應用程式',
+                        files: [file]
+                    });
+                    showToast('已完成備份檔輸出程序！', 'fa-circle-check');
+                    return;
+                } catch (err) {
+                    // Ignore user cancellation (AbortError)
+                    if (err.name !== 'AbortError') {
+                        console.error('Web Share failed:', err);
+                    } else {
+                        return;
+                    }
+                }
+            }
+
+            // Method B: Standard Browser Download Fallback
+            try {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 1000);
+
+                showToast('已輸出 JSON 備份檔！', 'fa-file-arrow-down');
+            } catch (e) {
+                showToast('備份產生失敗，請再試一次', 'fa-triangle-exclamation');
+            }
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedObj = JSON.parse(e.target.result);
+                    if (typeof importedObj === 'object' && importedObj !== null) {
+                        records = { ...records, ...importedObj };
+                        saveToStorage();
+                        showToast('備份資料匯入成功，已完成合併！', 'fa-circle-check');
+                        closeModal('backupModal');
+                    } else {
+                        showToast('備份檔案格式不符合規範！', 'fa-triangle-exclamation');
+                    }
+                } catch (err) {
+                    showToast('無法讀取檔案，請確認 JSON 格式！', 'fa-triangle-exclamation');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- Generic Modal Functions ---
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // --- PWA Service Worker & Installation Logic ---
+        function setupPWA() {
+            const manifest = {
+                name: "油資補助記錄",
+                short_name: "油資記錄",
+                start_url: "./",
+                display: "standalone",
+                background_color: "#f8fafc",
+                theme_color: "#2563eb",
+                icons: [
+                    {
+                        src: "https://cdn-icons-png.flaticon.com/512/3202/3202926.png",
+                        sizes: "512x512",
+                        type: "image/png",
+                        purpose: "any maskable"
+                    }
+                ]
+            };
+            const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+            const manifestUrl = URL.createObjectURL(manifestBlob);
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestUrl;
+            document.head.appendChild(link);
+
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    const CACHE_NAME = 'yb-mileage-v1';
+                    self.addEventListener('install', e => {
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('fetch', e => {
+                        e.respondWith(
+                            fetch(e.request).catch(() => caches.match(e.request))
+                        );
+                    });
+                `;
+                const swBlob = new Blob([swCode], { type: 'text/javascript' });
+                const swUrl = URL.createObjectURL(swBlob);
+                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error:', err));
+            }
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                document.getElementById('pwaInstallBtn').classList.remove('hidden');
+            });
+        }
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('pwaInstallBtn').classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
