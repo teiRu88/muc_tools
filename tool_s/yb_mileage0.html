@@ -641,11 +641,9 @@
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
                     await navigator.share({
-                        title: '油資補助記錄備份',
-                        text: '請選擇「儲存到檔案」或分享至其他應用程式',
+                        title: filename,
                         files: [file]
                     });
-                    showToast('已完成備份檔輸出程序！', 'fa-circle-check');
                     return;
                 } catch (err) {
                     // Ignore user cancellation (AbortError)
@@ -671,10 +669,8 @@
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                 }, 1000);
-
-                showToast('已輸出 JSON 備份檔！', 'fa-file-arrow-down');
             } catch (e) {
-                showToast('備份產生失敗，請再試一次', 'fa-triangle-exclamation');
+                console.error('Export failed:', e);
             }
         }
 
