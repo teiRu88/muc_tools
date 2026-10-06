@@ -627,51 +627,16 @@
             document.getElementById('searchDaysCount').innerText = `共 ${countDays} 天紀錄`;
         }
 
-        // --- Backup & Restore Logic (Optimized for iOS PWA Web Share API) ---
-        async function exportData() {
+        // --- Backup & Restore Logic ---
+        function exportData() {
             const dateToday = new Date().toISOString().split('T')[0];
-            const filename = `YB_里程備份_${dateToday}.json`;
-            const jsonStr = JSON.stringify(records, null, 2);
-            
-            // Create a formal File Object
-            const blob = new Blob([jsonStr], { type: 'application/json' });
-            const file = new File([blob], filename, { type: 'application/json' });
-
-            // Method A: Check for iOS Safari / Mobile native Web Share API with File sharing support
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        title: filename,
-                        files: [file]
-                    });
-                    return;
-                } catch (err) {
-                    // Ignore user cancellation (AbortError)
-                    if (err.name !== 'AbortError') {
-                        console.error('Web Share failed:', err);
-                    } else {
-                        return;
-                    }
-                }
-            }
-
-            // Method B: Standard Browser Download Fallback
-            try {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                a.target = '_blank';
-                document.body.appendChild(a);
-                a.click();
-                
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                }, 1000);
-            } catch (e) {
-                console.error('Export failed:', e);
-            }
+            const blob = new Blob([JSON.stringify(records, null, 2)], { type: "application/json" });
+            const a = Object.assign(document.createElement('a'), { 
+                href: URL.createObjectURL(blob), 
+                download: `YB_里程備份_${dateToday}.json` 
+            });
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
         }
 
         function importData(event) {
