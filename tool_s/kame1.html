@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>極簡中文時地相機</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        video, canvas { width: 100%; max-width: 400px; height: auto; border-radius: 8px; }
+        #status { font-size: 14px; margin: 8px 0; color: #ff9800; height: 20px; text-align: center; }
+        button { margin-top: 10px; padding: 12px 24px; font-size: 18px; background: #007aff; color: white; border: none; border-radius: 30px; cursor: pointer; }
+        button:disabled { background: #555; color: #aaa; }
+    </style>
+</head>
+<body>
+
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <div id="status">正在取得位置與地址...</div>
+    <button id="captureBtn" disabled>拍照並加上浮水印</button>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const statusDiv = document.getElementById('status');
+
+        let locationText = "定位中...";
+
+        // 1. 啟動相機
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { exact: "environment" } },
+                    audio: false
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                try {
+                    const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    video.srcObject = fallbackStream;
+                } catch (e) {
+                    statusDiv.textContent = "無法存取相機，請檢查權限或確認是否使用 HTTPS";
+                    return;
+                }
+            }
+        }
+
+        // 2. 取得 GPS 並透過 Nominatim 轉為中文詳細地址
+        function getLocationAndAddress() {
+            if (!navigator.geolocation) {
+                statusDiv.textContent = "您的瀏覽器不支援地理定位";
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+
+                    statusDiv.textContent = "正在解析中文地址...";
+
+                    try {
+                        // 呼叫 OpenStreetMap 的免費反向地理編碼 API，強制指定中文 (accept-language=zh-TW)
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, {
+                            headers: {
+                                'Accept-Language': 'zh-TW,zh;q=0.9'
+                            }
+                        });
+                        const data = await response.json();
+
+                        if (data && data.address) {
+                            const addr = data.address;
+                            // 組合出：城市 + 區/鄉鎮市 + 道路
+                            const city = addr.city || addr.county || addr.state || "";
+                            const district = addr.suburb || addr.city_district || addr.town || addr.village || "";
+                            const road = addr.road || addr.suburb || "";
+                            
+                            locationText = `${city} ${district} ${road}`.trim();
+                            if (!locationText) {
+                                locationText = data.display_name; // 如果組合失敗，退回顯示完整地址
+                            }
+                        } else {
+                            locationText = `緯度: ${lat.toFixed(4)}, 經度: ${lon.toFixed(4)}`;
+                        }
+
+                        statusDiv.textContent = `定位成功：${locationText}`;
+                        captureBtn.disabled = false; // 地址抓好後才解鎖按鈕
+                    } catch (e) {
+                        // 如果網路查詢地址失敗，至少保留經緯度座標
+                        locationText = `緯度: ${lat.toFixed(4)}, 經度: ${lon.toFixed(4)}`;
+                        statusDiv.textContent = "地址解析失敗，將以座標代替";
+                        captureBtn.disabled = false;
+                    }
+                },
+                (error) => {
+                    statusDiv.textContent = "無法取得 GPS 位置，請確認是否有授權";
+                    locationText = "未知位置";
+                    captureBtn.disabled = false;
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        initCamera();
+        getLocationAndAddress();
+
+        // 3. 拍照與合成浮水印
+        captureBtn.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // 畫上視訊畫面
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // 組合浮水印文字：時間 + 中文地址
+            const now = new Date();
+            const timeString = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            const watermarkText = `${timeString} | ${locationText}`;
+
+            // 設定文字樣式（為了適應高畫質相機，字體大小設大一點）
+            context.font = "bold 32px sans-serif";
+            context.fillStyle = "rgba(255, 255, 255, 0.9)";
+            context.shadowColor = "rgba(0, 0, 0, 0.9)";
+            context.shadowBlur = 8;
+            
+            // 繪製在左下角
+            context.fillText(watermarkText, 40, canvas.height - 50);
+
+            // 匯出圖片
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            let link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `photo_${Date.now()}.jpg`;
+            link.click();
+        });
+    </script>
+</body>
+</html>
