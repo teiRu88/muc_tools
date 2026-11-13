@@ -4,20 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-    /*手機瀏覽器預設模擬PC桌面寬度結果max-width:1200px失效.在head加viewport那行讓手機按實際寬度讀取CSS*/
-        body { background: #F2F0EB; margin: 0; padding: 10px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 1400px; }
-        .quote-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr); /*顯示一列 5 個*/
-            gap: 8px;
-        }
-        /* 1200px以下顯示3欄 */
-        @media (max-width: 1200px) { .quote-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 768px) { .quote-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 440px) { .quote-grid { grid-template-columns: repeat(1, 1fr); } }
+    body { background: #F2F0EB; margin: 0; padding: 10px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 1400px; }
+    .quote-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+    }
+    @media (max-width: 1200px) { .quote-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 768px) { .quote-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 440px) { .quote-grid { grid-template-columns: repeat(1, 1fr); } }
 
-        .widget-wrapper { background: #FFF; border-radius: 4px; min-height: 125px; }
+    /* 固定高度並清除溢出，強制 iframe 填滿 */
+    .widget-wrapper { background: #FFF; border-radius: 4px; height: 92px; overflow: hidden; }
+    .widget-wrapper iframe { width: 100% !important; height: 100% !important; border: none !important; }
     </style>
 </head>
 
