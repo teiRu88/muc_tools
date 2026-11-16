@@ -61,12 +61,12 @@
             statusDiv.textContent = "正在啟動相機與取得位置...";
 
             try {
-                // 指定 720x1280 畫質與鏡頭方向
+                // 指定 720x960 畫質與鏡頭方向
                 const constraints = {
                     video: {
                         facingMode: { ideal: facingMode },
                         width: { ideal: 720 },
-                        height: { ideal: 1280 }
+                        height: { ideal: 960 }
                     },
                     audio: false
                 };
@@ -153,7 +153,7 @@
                             const city = addr.city || addr.county || addr.state || "";
                             const district = addr.suburb || addr.city_district || addr.town || addr.village || "";
                             const road = addr.road || addr.suburb || "";
-                            const houseNumber = addr.house_number ? `${addr.house_number}號` : "";
+                            const houseNumber = addr.house_number ? `${addr.house_number}〒` : "";
                             
                             locationText = `${city} ${district} ${road} ${houseNumber}`.trim();
                             if (!locationText) {
@@ -183,15 +183,15 @@
             );
         }
 
-        // 3. 拍照與 720x1280 畫布合成（時間與地址分行顯示）
+        // 3. 拍照與 720x960 畫布合成（時間與地址分行顯示）
         captureBtn.addEventListener('click', () => {
             const context = canvas.getContext('2d');
             
-            // 固定強制設為 720x1280 直式解析度
+            // 固定強制設為 720x960 直式解析度
             canvas.width = 720;
-            canvas.height = 1280;
+            canvas.height = 960;
 
-            // 將視訊畫面完整填入 720x1280 畫布（處理畫面裁切適應）
+            // 將視訊畫面完整填入 720x960 畫布（處理畫面裁切適應）
             const vRatio = video.videoWidth / video.videoHeight;
             const cRatio = canvas.width / canvas.height;
             let renderWidth = canvas.width;
