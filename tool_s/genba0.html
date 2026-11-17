@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>📸現場相機 (3:4)</title>
+    <title>📸現場相機v110</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 10px; box-sizing: border-box; }
         
@@ -73,14 +73,14 @@
         let currentStream = null;
         let torchOn = false;
 
-        // 字體設定檔：預設為「大」
+        // 字體設定檔：預設為「中」
         // 畫面上預覽的 CSS 大小 (px)
         const fontSizes = [
             { name: "小", cssSize: 16 },
             { name: "中", cssSize: 22 },
             { name: "大", cssSize: 28 }
         ];
-        let currentFontIndex = 2; // 0:小, 1:中, 2:大 (預設大)
+        let currentFontIndex = 1; // 0:小, 1:中(預設), 2:大
 
         // 更新畫面上的即時字體大小與內容
         function updateLiveOverlay() {
