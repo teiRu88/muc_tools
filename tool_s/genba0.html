@@ -3,28 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>📸現場相機720</title>
+    <title>📸現場相機 (3:4)</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 10px; box-sizing: border-box; }
-        video, canvas, #previewImage { width: 100%; max-width: 400px; height: auto; border-radius: 8px; background: #222; }
+        
+        /* 包裹相機與即時浮水印的容器，確保疊加對齊 */
+        .camera-container { position: relative; width: 100%; max-width: 400px; aspect-ratio: 3/4; border-radius: 8px; overflow: hidden; background: #222; }
+        video, #previewImage { width: 100%; height: 100%; object-fit: cover; display: block; }
+        canvas { display: none; }
+
+        /* 即時疊加在相機畫面上的文字預覽層 */
+        #liveOverlay { position: absolute; bottom: 15px; left: 15px; right: 15px; color: rgba(255, 255, 255, 0.95); font-weight: bold; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9); pointer-events: none; line-height: 1.3; }
+
         #status { font-size: 14px; margin: 8px 0; color: #ff9800; height: 20px; text-align: center; }
         .btn-group { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
         button { padding: 10px 18px; font-size: 16px; background: #007aff; color: white; border: none; border-radius: 20px; cursor: pointer; }
         button:disabled { background: #555; color: #aaa; }
         button.active { background: #34c759; }
+        
         #previewContainer { display: none; flex-direction: column; align-items: center; margin-top: 15px; width: 100%; max-width: 400px; }
         #previewContainer p { margin: 5px 0; font-size: 14px; color: #34c759; }
     </style>
 </head>
 <body>
 
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas" style="display:none;"></canvas>
+    <div class="camera-container">
+        <video id="video" autoplay playsinline muted></video>
+        <div id="liveOverlay">
+            <div id="liveTime">--/--/-- --:--</div>
+            <div id="liveAddress">定位中...</div>
+        </div>
+    </div>
+    <canvas id="canvas"></canvas>
+    
     <div id="status">等待開啟相機...</div>
     
     <div class="btn-group">
         <button id="startCameraBtn">開啟相機</button>
         <button id="switchCameraBtn" disabled>切換鏡頭 (後)</button>
+        <button id="fontSizeBtn" disabled>字體：大</button>
         <button id="torchBtn" disabled>手電筒：關</button>
     </div>
     <div class="btn-group">
@@ -42,17 +59,43 @@
         const startCameraBtn = document.getElementById('startCameraBtn');
         const captureBtn = document.getElementById('captureBtn');
         const switchCameraBtn = document.getElementById('switchCameraBtn');
+        const fontSizeBtn = document.getElementById('fontSizeBtn');
         const torchBtn = document.getElementById('torchBtn');
         const statusDiv = document.getElementById('status');
         const previewContainer = document.getElementById('previewContainer');
         const previewImage = document.getElementById('previewImage');
+        const liveTime = document.getElementById('liveTime');
+        const liveAddress = document.getElementById('liveAddress');
 
         let locationText = "定位中...";
-        let currentFacingMode = "environment"; // 預設後鏡頭
+        let currentFacingMode = "environment";
         let currentStream = null;
         let torchOn = false;
 
-        // 1. 使用者手動點擊開啟相機
+        // 字體設定檔：預設為「大」
+        // 對應 Canvas (1080x1440) 的像素大小 與 畫面預覽 (CSS px)
+        const fontSizes = [
+            { name: "小", canvasSize: 32, cssSize: "16px" },
+            { name: "中", canvasSize: 42, cssSize: "21px" },
+            { name: "大", canvasSize: 52, cssSize: "26px" }
+        ];
+        let currentFontIndex = 2; // 0:小, 1:中, 2:大
+
+        // 更新畫面上的即時字體大小與內容
+        function updateLiveOverlay() {
+            liveTime.style.fontSize = fontSizes[currentFontIndex].cssSize;
+            liveAddress.style.fontSize = fontSizes[currentFontIndex].cssSize;
+            
+            const now = new Date();
+            const timeString = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            
+            liveTime.textContent = timeString;
+            liveAddress.textContent = locationText;
+        }
+
+        // 定期更新即時預覽的時間
+        setInterval(updateLiveOverlay, 1000);
+
         async function initCamera(facingMode) {
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
@@ -61,21 +104,20 @@
             statusDiv.textContent = "正在啟動相機與取得位置...";
 
             try {
-                // 指定 720x960 畫質與鏡頭方向
                 const constraints = {
                     video: {
                         facingMode: { ideal: facingMode },
-                        width: { ideal: 720 },
-                        height: { ideal: 960 }
+                        width: { ideal: 1080 },
+                        height: { ideal: 1440 }
                     },
                     audio: false
                 };
                 currentStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = currentStream;
                 
-                // 啟用相關按鈕
-                startCameraBtn.style.display = "none"; // 隱藏開啟按鈕
+                startCameraBtn.style.display = "none";
                 switchCameraBtn.disabled = false;
+                fontSizeBtn.disabled = false;
                 captureBtn.disabled = false;
                 checkTorchSupport();
                 statusDiv.textContent = `定位成功：${locationText}`;
@@ -84,7 +126,6 @@
             }
         }
 
-        // 檢查是否支援手電筒
         function checkTorchSupport() {
             if (!currentStream) return;
             const track = currentStream.getVideoTracks()[0];
@@ -98,13 +139,18 @@
             }
         }
 
-        // 點擊「開啟相機」按鈕
         startCameraBtn.addEventListener('click', () => {
-            getLocationAndAddress(); // 同步抓 GPS
+            getLocationAndAddress();
             initCamera(currentFacingMode);
         });
 
-        // 切換前後鏡頭
+        // 循環切換字體大小：大 -> 小 -> 中 -> 大
+        fontSizeBtn.addEventListener('click', () => {
+            currentFontIndex = (currentFontIndex + 1) % fontSizes.length;
+            fontSizeBtn.textContent = `字體：${fontSizes[currentFontIndex].name}`;
+            updateLiveOverlay();
+        });
+
         switchCameraBtn.addEventListener('click', () => {
             currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
             switchCameraBtn.textContent = `切換鏡頭 (${currentFacingMode === "environment" ? "後" : "前"})`;
@@ -114,7 +160,6 @@
             initCamera(currentFacingMode);
         });
 
-        // 控制手電筒
         torchBtn.addEventListener('click', async () => {
             if (!currentStream) return;
             const track = currentStream.getVideoTracks()[0];
@@ -130,7 +175,6 @@
             }
         });
 
-        // 2. 取得 GPS 與中文地址
         function getLocationAndAddress() {
             if (!navigator.geolocation) {
                 statusDiv.textContent = "您的瀏覽器不支援地理定位";
@@ -163,11 +207,13 @@
                             locationText = `緯度: ${lat.toFixed(4)}, 經度: ${lon.toFixed(4)}`;
                         }
 
+                        updateLiveOverlay();
                         if (currentStream) {
                             statusDiv.textContent = `定位成功：${locationText}`;
                         }
                     } catch (e) {
                         locationText = `緯度: ${lat.toFixed(4)}, 經度: ${lon.toFixed(4)}`;
+                        updateLiveOverlay();
                         if (currentStream) {
                             statusDiv.textContent = "地址解析失敗，將以座標代替";
                         }
@@ -175,6 +221,7 @@
                 },
                 (error) => {
                     locationText = "未知位置";
+                    updateLiveOverlay();
                     if (currentStream) {
                         statusDiv.textContent = "無法取得 GPS 位置";
                     }
@@ -183,45 +230,45 @@
             );
         }
 
-        // 3. 拍照與 720x960 畫布合成（時間與地址分行顯示）
+        // 拍照與 3:4 精準合成（帶入當前選定的字體大小）
         captureBtn.addEventListener('click', () => {
             const context = canvas.getContext('2d');
             
-            // 固定強制設為 720x960 直式解析度
-            canvas.width = 720;
-            canvas.height = 960;
+            const canvasW = 1080;
+            const canvasH = 1440;
+            canvas.width = canvasW;
+            canvas.height = canvasH;
 
-            // 將視訊畫面完整填入 720x960 畫布（處理畫面裁切適應）
-            const vRatio = video.videoWidth / video.videoHeight;
-            const cRatio = canvas.width / canvas.height;
-            let renderWidth = canvas.width;
-            let renderHeight = canvas.height;
-            let renderX = 0;
-            let renderY = 0;
+            const vAspect = video.videoWidth / video.videoHeight;
+            const cAspect = canvasW / canvasH;
 
-            if (vRatio > cRatio) {
-                renderWidth = canvas.height * vRatio;
-                renderX = (canvas.width - renderWidth) / 2;
+            let sWidth = video.videoWidth;
+            let sHeight = video.videoHeight;
+            let sX = 0;
+            let sY = 0;
+
+            if (vAspect > cAspect) {
+                sWidth = video.videoHeight * cAspect;
+                sX = (video.videoWidth - sWidth) / 2;
             } else {
-                renderHeight = canvas.width / vRatio;
-                renderY = (canvas.height - renderHeight) / 2;
+                sHeight = video.videoWidth / cAspect;
+                sY = (video.videoHeight - sHeight) / 2;
             }
-            context.drawImage(video, renderX, renderY, renderWidth, renderHeight);
 
-            // 組合浮水印文字
+            context.drawImage(video, sX, sY, sWidth, sHeight, 0, 0, canvasW, canvasH);
+
             const now = new Date();
             const timeString = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
             
-            // 固定字體大小配合 720x1280
-            let fontSize = 28;
+            // 套用目前選取的字體大小
+            let fontSize = fontSizes[currentFontIndex].canvasSize;
             context.font = `bold ${fontSize}px sans-serif`;
             context.fillStyle = "rgba(255, 255, 255, 0.95)";
             context.shadowColor = "rgba(0, 0, 0, 0.9)";
-            context.shadowBlur = 6;
+            context.shadowBlur = 8;
 
-            const maxWidth = canvas.width - 80; // 左右各留 40px 邊距
+            const maxWidth = canvasW - 100; // 左右各留 50px
 
-            // 地址自動折行
             let addressLines = [];
             let currentLine = "";
             for (let i = 0; i < locationText.length; i++) {
@@ -238,17 +285,16 @@
 
             let totalLines = 1 + addressLines.length;
             let lineHeight = fontSize * 1.3;
-            let startY = canvas.height - 40 - ((totalLines - 1) * lineHeight);
+            let startY = canvasH - 50 - ((totalLines - 1) * lineHeight);
 
             // 1. 繪製時間
-            context.fillText(timeString, 40, startY);
+            context.fillText(timeString, 50, startY);
 
             // 2. 繪製地址
             addressLines.forEach((line, index) => {
-                context.fillText(line, 40, startY + ((index + 1) * lineHeight));
+                context.fillText(line, 50, startY + ((index + 1) * lineHeight));
             });
 
-            // 產生預覽
             const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
             previewImage.src = dataUrl;
             previewContainer.style.display = 'flex';
