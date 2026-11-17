@@ -27,7 +27,7 @@
 </head>
 <body>
 
-    <div class="camera-container">
+    <div class="camera-container" id="cameraContainer">
         <video id="video" autoplay playsinline muted></video>
         <div id="liveOverlay">
             <div id="liveTime">--/--/-- --:--</div>
@@ -56,6 +56,7 @@
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
+        const cameraContainer = document.getElementById('cameraContainer');
         const startCameraBtn = document.getElementById('startCameraBtn');
         const captureBtn = document.getElementById('captureBtn');
         const switchCameraBtn = document.getElementById('switchCameraBtn');
@@ -73,18 +74,18 @@
         let torchOn = false;
 
         // 字體設定檔：預設為「大」
-        // 對應 Canvas (1080x1440) 的像素大小 與 畫面預覽 (CSS px)
+        // 畫面上預覽的 CSS 大小 (px)
         const fontSizes = [
-            { name: "小", canvasSize: 28, cssSize: "14px" },
-            { name: "中", canvasSize: 36, cssSize: "18px" },
-            { name: "大", canvasSize: 48, cssSize: "24px" }
+            { name: "小", cssSize: 16 },
+            { name: "中", cssSize: 22 },
+            { name: "大", cssSize: 28 }
         ];
-        let currentFontIndex = 2; // 0:小, 1:中, 2:大
+        let currentFontIndex = 2; // 0:小, 1:中, 2:大 (預設大)
 
         // 更新畫面上的即時字體大小與內容
         function updateLiveOverlay() {
-            liveTime.style.fontSize = fontSizes[currentFontIndex].cssSize;
-            liveAddress.style.fontSize = fontSizes[currentFontIndex].cssSize;
+            liveTime.style.fontSize = fontSizes[currentFontIndex].cssSize + "px";
+            liveAddress.style.fontSize = fontSizes[currentFontIndex].cssSize + "px";
             
             const now = new Date();
             const timeString = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -93,7 +94,6 @@
             liveAddress.textContent = locationText;
         }
 
-        // 定期更新即時預覽的時間
         setInterval(updateLiveOverlay, 1000);
 
         async function initCamera(facingMode) {
@@ -230,7 +230,7 @@
             );
         }
 
-        // 拍照與 3:4 精準合成（帶入當前選定的字體大小）
+        // 拍照與 3:4 精準合成（透過即時比例換算，實現完美所見即所得）
         captureBtn.addEventListener('click', () => {
             const context = canvas.getContext('2d');
             
@@ -239,6 +239,7 @@
             canvas.width = canvasW;
             canvas.height = canvasH;
 
+            // 1. 影像裁切計算（維持 3:4 所見即所得）
             const vAspect = video.videoWidth / video.videoHeight;
             const cAspect = canvasW / canvasH;
 
@@ -257,17 +258,23 @@
 
             context.drawImage(video, sX, sY, sWidth, sHeight, 0, 0, canvasW, canvasH);
 
-            const now = new Date();
-            const timeString = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-            
-            // 套用目前選取的字體大小
-            let fontSize = fontSizes[currentFontIndex].canvasSize;
+            // 2. 動態比例換算：計算預覽框寬度與 Canvas 寬度的倍率
+            const previewDisplayWidth = cameraContainer.clientWidth;
+            const scaleFactor = canvasW / previewDisplayWidth;
+
+            // 3. 取得當前畫面上選定的字體大小 (CSS px)，並乘以倍率對應到高畫質 Canvas
+            let fontSize = fontSizes[currentFontIndex].cssSize * scaleFactor;
             context.font = `bold ${fontSize}px sans-serif`;
             context.fillStyle = "rgba(255, 255, 255, 0.95)";
             context.shadowColor = "rgba(0, 0, 0, 0.9)";
-            context.shadowBlur = 8;
+            context.shadowBlur = 8 * scaleFactor;
 
-            const maxWidth = canvasW - 100; // 左右各留 50px
+            // 對應預覽框的內距 (15px) 換算到 Canvas 上的邊距
+            const padding = 15 * scaleFactor;
+            const maxWidth = canvasW - (padding * 2);
+
+            const now = new Date();
+            const timeString = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
             let addressLines = [];
             let currentLine = "";
@@ -285,16 +292,16 @@
 
             let totalLines = 1 + addressLines.length;
             let lineHeight = fontSize * 1.3;
-            let startY = canvasH - 50 - ((totalLines - 1) * lineHeight);
+            let startY = canvasH - padding - ((totalLines - 1) * lineHeight);
 
-            // 1. 繪製時間
-            context.fillText(timeString, 50, startY);
+            // 4. 繪製時間與地址
+            context.fillText(timeString, padding, startY);
 
-            // 2. 繪製地址
             addressLines.forEach((line, index) => {
-                context.fillText(line, 50, startY + ((index + 1) * lineHeight));
+                context.fillText(line, padding, startY + ((index + 1) * lineHeight));
             });
 
+            // 5. 輸出預覽
             const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
             previewImage.src = dataUrl;
             previewContainer.style.display = 'flex';
