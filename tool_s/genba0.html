@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>📸現場相機v110</title>
+    <title>📷現場相機v120</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 10px; box-sizing: border-box; }
         
@@ -41,7 +41,7 @@
     <div class="btn-group">
         <button id="startCameraBtn">開啟相機</button>
         <button id="switchCameraBtn" disabled>切換鏡頭 (後)</button>
-        <button id="fontSizeBtn" disabled>字體：大</button>
+        <button id="fontSizeBtn" disabled>字體：中</button>
         <button id="torchBtn" disabled>手電筒：關</button>
     </div>
     <div class="btn-group">
@@ -80,7 +80,7 @@
             { name: "中", cssSize: 22 },
             { name: "大", cssSize: 28 }
         ];
-        let currentFontIndex = 1; // 0:小, 1:中(預設), 2:大
+        let currentFontIndex = 1; // 0:小, 1:中 (預設), 2:大
 
         // 更新畫面上的即時字體大小與內容
         function updateLiveOverlay() {
@@ -96,9 +96,27 @@
 
         setInterval(updateLiveOverlay, 1000);
 
+        // 關閉相機並重設操作按鈕狀態（保留「開啟相機」按鈕）
+        function stopCamera(statusMessage = "相機已關閉，按「開啟相機」重新啟動") {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            video.srcObject = null;
+            torchOn = false;
+            torchBtn.textContent = "手電筒：關";
+            torchBtn.classList.remove('active');
+            torchBtn.disabled = true;
+            switchCameraBtn.disabled = true;
+            fontSizeBtn.disabled = true;
+            captureBtn.disabled = true;
+            statusDiv.textContent = statusMessage;
+        }
+
         async function initCamera(facingMode) {
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
             }
 
             statusDiv.textContent = "正在啟動相機與取得位置...";
@@ -115,14 +133,13 @@
                 currentStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = currentStream;
                 
-                startCameraBtn.style.display = "none";
                 switchCameraBtn.disabled = false;
                 fontSizeBtn.disabled = false;
                 captureBtn.disabled = false;
                 checkTorchSupport();
                 statusDiv.textContent = `定位成功：${locationText}`;
             } catch (err) {
-                statusDiv.textContent = "無法存取相機，請檢查權限或確認使用 HTTPS";
+                stopCamera("無法存取相機，請檢查權限或確認使用 HTTPS");
             }
         }
 
@@ -140,11 +157,20 @@
         }
 
         startCameraBtn.addEventListener('click', () => {
+            locationText = "定位中...";
+            updateLiveOverlay();
             getLocationAndAddress();
             initCamera(currentFacingMode);
         });
 
-        // 循環切換字體大小：大 -> 小 -> 中 -> 大
+        // 離開前景時自動關閉相機
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopCamera("已進入背景，相機已自動關閉");
+            }
+        });
+
+        // 循環切換字體大小：小 -> 中 -> 大 -> 小
         fontSizeBtn.addEventListener('click', () => {
             currentFontIndex = (currentFontIndex + 1) % fontSizes.length;
             fontSizeBtn.textContent = `字體：${fontSizes[currentFontIndex].name}`;
@@ -232,6 +258,7 @@
 
         // 拍照與 3:4 精準合成（透過即時比例換算，實現完美所見即所得）
         captureBtn.addEventListener('click', () => {
+            if (!currentStream) return;
             const context = canvas.getContext('2d');
             
             const canvasW = 1080;
